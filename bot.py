@@ -8,11 +8,14 @@ Features implemented so far:
 - /events            : list recent events
 - /my_events         : list events you created
 
-Run locally with long‑polling for ease of testing.
-Set BOT_TOKEN as an environment variable or replace the placeholder below.
+Run locally with long-polling for ease of testing.
+
+Configuration notes:
+- Put your Telegram API token as `BOT_TOKEN=<token>` in a file **one directory up** from this script (i.e., `../.env`).
+- Requires `python-dotenv` for loading the .env file.
 
 Next steps (ideas):
-- Add description/date fields (multi‑step conversation)
+- Add description/date fields (multi-step conversation)
 - Inline "Join" buttons for nicer UX
 - /event <id> command for event details & participant list
 - Command to delete/cancel event by creator
@@ -20,11 +23,23 @@ Next steps (ideas):
 
 import os
 import sqlite3
+from pathlib import Path
+
+from dotenv import load_dotenv
 import telebot
 from telebot.types import Message
 
 # --- Configuration ---------------------------------------------------------
-BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+# Load BOT_TOKEN from ../.env (parent directory of this file)
+env_path = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(env_path)
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError(
+        "BOT_TOKEN not set. Add BOT_TOKEN=<your_token> to ../.env or export it as env var."
+    )
+
 DB_PATH = "events.db"
 
 bot = telebot.TeleBot(BOT_TOKEN)
