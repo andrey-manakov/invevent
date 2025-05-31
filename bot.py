@@ -5,6 +5,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from routers.start import router as start_router
 from routers.events import router as events_router
 from routers.friends import router as friends_router
+from dotenv import load_dotenv
+load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "CHANGE_ME")
 
