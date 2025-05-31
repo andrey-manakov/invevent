@@ -39,14 +39,14 @@ CREATE TABLE IF NOT EXISTS attendees(
 """
 
 async def get_db():
-    conn = await aiosqlite.connect(DB_PATH)
-    conn.row_factory = aiosqlite.Row
-    return conn
+    return await aiosqlite.connect(DB_PATH)
 
 async def init_db():
-    async with await get_db() as db:
-        await db.executescript(SCHEMA)
-        await db.commit()
+    conn = await aiosqlite.connect(DB_PATH)
+    conn.row_factory = aiosqlite.Row
+    await conn.executescript(SCHEMA)
+    await conn.commit()
+    await conn.close()
 
 if __name__ == "__main__":
     asyncio.run(init_db())
