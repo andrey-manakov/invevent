@@ -1,24 +1,3 @@
- """
- Invevent Telegram Bot — PoC implementation (v0.1, 2025‑06‑01)
- ──────────────────────────────────────────────────────────────
- Lightweight, single‑file code that follows the **Invevent Telegram Bot — PoC
- Specification (v0.3)** placed in the adjacent canvas.
-
- ▶ Frameworks
-   • pyTelegramBotAPI 4.18.x (sync)
-   • SQLAlchemy 2.0 (using declarative Base + sqlite:///db.sqlite3)
-   • python‑dotenv 1.0.x
-
- This file purposefully fits everything in ~300 lines so it can be pasted into
- a VPS and run immediately (systemd executes `python invevent_bot_poc.py`). For
- production/MVP you will want to refactor into a package with async aiogram,
- Alembic migrations, etc.
-
- *NOTE* — Many helper functions contain "TODO:" markers for secondary features
-     (pagination rendering, validation localisation, etc.) which are optional
-     for PoC but keep the structure ready for MVP.
- """
-
 # == standard library ==
 import os
 import uuid
