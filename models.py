@@ -1,4 +1,3 @@
-"""Database models."""
 from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum as PyEnum

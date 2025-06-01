@@ -1,20 +1,21 @@
-"""In-memory create-event wizard."""
+"""Simple in‑memory wizard state per user."""
 from datetime import datetime, timezone
-from typing import Dict, Any, List
+from typing import Dict, Any
 
-MAX_SNIPPET = 60
-WIZ_STEPS = ["title", "description", "datetime", "location", "visibility", "confirm"]
-WIZARDS: Dict[int, Dict[str, Any]] = {}
+MAX_SNIPPET = 200
+STEPS = ["title", "description", "datetime", "tags", "location", "visibility", "confirm"]
 
-def snippet(text: str, max_len: int = MAX_SNIPPET) -> str:
-    return text if len(text) <= max_len else text[: max_len - 1] + "…"
+WIZ: Dict[int, Dict[str, Any]] = {}
 
-def reset(user_id: int):
-    WIZARDS.pop(user_id, None)
+def reset(uid: int):
+    WIZ.pop(uid, None)
 
-def start(user_id: int):
-    reset(user_id)
-    WIZARDS[user_id] = {"step": 0, "owner_id": user_id}
+def start(uid: int):
+    reset(uid)
+    WIZ[uid] = {"step": 0}
 
-def get(user_id: int):
-    return WIZARDS.get(user_id)
+def get(uid: int):
+    return WIZ.get(uid)
+
+def snippet(txt: str, max_len: int = MAX_SNIPPET):
+    return txt if len(txt) <= max_len else txt[:max_len-1] + "…"
