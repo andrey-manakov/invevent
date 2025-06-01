@@ -84,7 +84,7 @@ def cmd_start(message: Message):
     bot.reply_to(
         message,
         (
-            "👋 Привет, I can help you organize simple events!\n\n"
+            "👋 Hi, I can help you organize simple events!\n\n"
             "Commands:\n"
             "/create_event <title>  – create a new event\n"
             "/join_event <id>      – join an event\n"
