@@ -1,287 +1,406 @@
-"""
-Simple Telegram Event Bot using pyTelegramBotAPI (telebot) + SQLite.
+ """
+ Invevent Telegram Bot — PoC implementation (v0.1, 2025‑06‑01)
+ ──────────────────────────────────────────────────────────────
+ Lightweight, single‑file code that follows the **Invevent Telegram Bot — PoC
+ Specification (v0.3)** placed in the adjacent canvas.
 
-New in this version (sharing support):
--------------------------------------------------
-- /share_event <id> [<user_id|@username>] : send an invite link or direct DM to a contact ⚡️
-- Deep‑link handling – a user opening https://t.me/<bot_username>?start=join_<id> joins instantly.
-- Help message updated to include /share_event.
+ ▶ Frameworks
+   • pyTelegramBotAPI 4.18.x (sync)
+   • SQLAlchemy 2.0 (using declarative Base + sqlite:///db.sqlite3)
+   • python‑dotenv 1.0.x
 
-Existing commands:
-- /start                     : shows help message (or auto‑join via deep‑link)
-- /create_event <title>      : create a new event with a title
-- /join_event <id>           : join an existing event
-- /events                    : list recent events
-- /my_events                 : list events you created
+ This file purposefully fits everything in ~300 lines so it can be pasted into
+ a VPS and run immediately (systemd executes `python invevent_bot_poc.py`). For
+ production/MVP you will want to refactor into a package with async aiogram,
+ Alembic migrations, etc.
 
-Run locally with long‑polling for ease of testing.
+ *NOTE* — Many helper functions contain "TODO:" markers for secondary features
+     (pagination rendering, validation localisation, etc.) which are optional
+     for PoC but keep the structure ready for MVP.
+ """
 
-Configuration notes:
-- Put your Telegram API token as `BOT_TOKEN=<token>` in a file **one directory up** from this script (i.e., `../.env`).
-- Requires `python-dotenv` for loading the .env file.
-
-Next steps (ideas):
-- Add description/date fields (multi‑step conversation)
-- Inline "Join" buttons for nicer UX
-- /event <id> command for event details & participant list
-- Command to delete/cancel event by creator
-"""
-
+# == standard library ==
 import os
-import sqlite3
-from pathlib import Path
-from typing import Optional
+import uuid
+import logging
+from datetime import datetime, timezone, timedelta
+from typing import List, Optional, Tuple
 
+# == third‑party ==
 from dotenv import load_dotenv
+from sqlalchemy import (
+    Column, String, Integer, DateTime, Enum, ForeignKey, create_engine,
+    select, func, Text
+)
+from sqlalchemy.orm import declarative_base, sessionmaker, Mapped, mapped_column
 import telebot
-from telebot.types import Message
+from telebot import types
 
-# --- Configuration ---------------------------------------------------------
-# Load BOT_TOKEN from ../.env (parent directory of this file)
-env_path = Path(__file__).resolve().parents[1] / ".env"
-load_dotenv(env_path)
+# ──────────────────────────────────────────────────────────────
+# 1. Config / Setup
+# ──────────────────────────────────────────────────────────────
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+load_dotenv()
+
+BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
+DB_URL: str = os.getenv("DB_URL", "sqlite:///db.sqlite3")
+
 if not BOT_TOKEN:
-    raise RuntimeError(
-        "BOT_TOKEN not set. Add BOT_TOKEN=<your_token> to ../.env or export it as env var."
-    )
+    raise RuntimeError("BOT_TOKEN missing in .env file")
 
-DB_PATH = "events.db"
+# Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.FileHandler("logs/app.log"), logging.StreamHandler()]
+)
+log = logging.getLogger("invevent")
+
+# Database
+engine = create_engine(DB_URL, echo=False, future=True)
+Base = declarative_base()
+SessionLocal = sessionmaker(bind=engine, expire_on_commit=False, future=True)
+
+# ──────────────────────────────────────────────────────────────
+# 2. Data Models (PoC schema)
+# ──────────────────────────────────────────────────────────────
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)  # TG user id
+    first_name: Mapped[str] = mapped_column(String(64))
+    username: Mapped[Optional[str]] = mapped_column(String(64))
+
+    def __repr__(self):
+        return f"<User {self.id} @{self.username}>"
+
+
+class EventVisibility(str, Enum):
+    Public = "Public"
+    Friends = "Friends"
+
+
+class EventState(str, Enum):
+    Active = "Active"
+    Past = "Past"
+    Deleted = "Deleted"
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)  # UUID4 str
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    title: Mapped[str] = mapped_column(String(80))
+    description: Mapped[str] = mapped_column(Text)
+    datetime_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    location_txt: Mapped[str] = mapped_column(String(120))
+    visibility: Mapped[EventVisibility] = mapped_column(Enum(EventVisibility))
+    tags: Mapped[str] = mapped_column(String(120))  # CSV within PoC
+    notification_offset_min: Mapped[Optional[int]] = mapped_column(Integer)
+    state: Mapped[EventState] = mapped_column(Enum(EventState), default=EventState.Active)
+
+
+class Participation(Base):
+    __tablename__ = "participations"
+
+    event_id: Mapped[str] = mapped_column(String(36), ForeignKey("events.id"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
+    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.utcnow())
+
+
+class Friendship(Base):
+    __tablename__ = "friendships"
+
+    follower_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
+    followee_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.utcnow())
+
+# Create tables if first run
+Base.metadata.create_all(engine)
+
+# ──────────────────────────────────────────────────────────────
+# 3. Bot & Keyboards
+# ──────────────────────────────────────────────────────────────
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
-# Cache bot username once so we can build deep‑links
-BOT_USERNAME: str = bot.get_me().username
+PERSISTENT_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+PERSISTENT_KB.add(
+    "📅 My events", "🧑‍🤝‍🧑 Friends' events",
+    "🌐 Public events", "➕ Create event",
+    "⚙️ Settings"
+)
 
-# --- Database helpers ------------------------------------------------------
+TAG_CATALOGUE: List[str] = [
+    "🎉 Party", "🎮 Gaming", "🍽️ Food", "🎬 Cinema", "🏞️ Outdoor", "🎵 Concert", "🛍️ Shopping"
+]
 
-def init_db() -> None:
-    """Create tables if they do not yet exist."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            creator_id INTEGER,
-            title TEXT NOT NULL,
-            ts DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS participants (
-            event_id INTEGER,
-            user_id INTEGER,
-            joined_ts DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(event_id, user_id)
-        )
-        """
-    )
-    conn.commit()
-    conn.close()
+# Helper: build callback payload
+def cb(event_id: str, verb: str) -> str:
+    return f"evt:{event_id}:act:{verb}"
 
+# Helper: truncate and escape description for list view
+MAX_DESC_SNIPPET = 50
 
-def get_event_title(event_id: int) -> Optional[str]:
-    """Return event title for given id or None."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT title FROM events WHERE id = ?", (event_id,))
-    row = c.fetchone()
-    conn.close()
-    return row[0] if row else None
+def snippet(text: str, max_len: int = MAX_DESC_SNIPPET) -> str:
+    if len(text) <= max_len:
+        return text
+    return text[:max_len - 1] + "…"
 
-
-init_db()
-
-# --- Command handlers ------------------------------------------------------
-
-
-def help_text() -> str:
-    return (
-        "👋 <b>Hi!</b> I can help you organise simple events.\n\n"
-        "Commands:\n"
-        "/create_event &lt;title&gt;  – create a new event\n"
-        "/join_event &lt;id&gt;       – join an event\n"
-        "/share_event &lt;id&gt; [user] – invite a friend\n"
-        "/events                – list recent events\n"
-        "/my_events             – list events you created"
-    )
-
+# ──────────────────────────────────────────────────────────────
+# 4. Command & Message Handlers
+# ──────────────────────────────────────────────────────────────
 
 @bot.message_handler(commands=["start"])
-def cmd_start(message: Message):
-    """Show help or join via deep‑link."""
-    args = message.text.split(maxsplit=1)
-
-    # Deep‑link: /start join_<id>
-    if len(args) == 2 and args[1].startswith("join_") and args[1][5:].isdigit():
-        # Re‑use existing join logic
-        fake_join_msg = message
-        fake_join_msg.text = f"/join_event {args[1][5:]}"
-        cmd_join_event(fake_join_msg)
-        return
-
-    bot.reply_to(message, help_text())
-
-
-@bot.message_handler(commands=["create_event"])
-def cmd_create_event(message: Message):
-    args = message.text.split(maxsplit=1)
-    if len(args) < 2:
-        bot.reply_to(message, "Usage: /create_event <title>")
-        return
-
-    title = args[1].strip()
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        "INSERT INTO events (creator_id, title) VALUES (?, ?)",
-        (message.from_user.id, title),
-    )
-    event_id = c.lastrowid
-    conn.commit()
-    conn.close()
-
-    deep_link = f"https://t.me/{BOT_USERNAME}?start=join_{event_id}"
-
-    bot.reply_to(
-        message,
-        (
-            f"✅ Event #{event_id} created!\n"
-            f"Title: <b>{title}</b>\n\n"
-            "Ask friends to join using one of these: \n"
-            f"• <code>/join_event {event_id}</code> (copy)\n"
-            f"• {deep_link} (tap to open)\n\n"
-            f"Or send <code>/share_event {event_id}</code> to quickly forward an invite."
-        ),
-        disable_web_page_preview=True,
+def handle_start(msg: types.Message):
+    with SessionLocal() as db:
+        ensure_user(db, msg.from_user)
+    bot.send_message(
+        msg.chat.id,
+        "<b>Hi {}</b>! I can help you plan and share events.\nChoose an option ↓".format(msg.from_user.first_name),
+        reply_markup=PERSISTENT_KB
     )
 
 
-@bot.message_handler(commands=["share_event"])
-def cmd_share_event(message: Message):
-    """Let an organiser quickly share an invite."""
-    args = message.text.split(maxsplit=2)
-    if len(args) < 2 or not args[1].isdigit():
-        bot.reply_to(message, "Usage: /share_event <event_id> [<user_id|@username>]")
-        return
-
-    event_id = int(args[1])
-    title = get_event_title(event_id)
-    if title is None:
-        bot.reply_to(message, "❌ Event not found.")
-        return
-
-    deep_link = f"https://t.me/{BOT_USERNAME}?start=join_{event_id}"
-    invite_text = (
-        f"📨 <b>Invitation</b>\n"
-        f"You have been invited to <b>{title}</b> (#{event_id}).\n"
-        f"Tap to join ➡️ {deep_link} or send /join_event {event_id}."
-    )
-
-    # If a recipient is provided, try DM‑ing them directly.
-    if len(args) == 3:
-        recipient = args[2].strip()
-        # Numeric user ID?
-        if recipient.isdigit():
-            try:
-                bot.send_message(int(recipient), invite_text, disable_web_page_preview=True)
-                bot.reply_to(message, "✅ Invite sent via DM!")
-            except telebot.apihelper.ApiTelegramException:
-                bot.reply_to(message, "⚠️ Couldn't deliver – has the user started the bot?")
-        else:
-            # Assume @username – bots cannot DM unless user started them, so just send text back.
-            bot.reply_to(
-                message,
-                f"Forward this to {recipient}:\n\n{invite_text}",
-                disable_web_page_preview=True,
-            )
+def ensure_user(db, tg_user: types.User):
+    u = db.get(User, tg_user.id)
+    if not u:
+        u = User(id=tg_user.id, first_name=tg_user.first_name, username=tg_user.username)
+        db.add(u)
+        db.commit()
     else:
-        # No recipient – just show invite text so user can forward.
-        bot.reply_to(message, invite_text, disable_web_page_preview=True)
+        # Update username changes
+        if u.username != tg_user.username:
+            u.username = tg_user.username
+            db.commit()
 
+# == My events ==
+@bot.message_handler(func=lambda m: m.text == "📅 My events")
+def handle_my_events(msg: types.Message):
+    user_id = msg.from_user.id
+    with SessionLocal() as db:
+        events = db.scalars(
+            select(Event)
+            .where(
+                (Event.owner_id == user_id) |
+                (Event.id.in_(select(Participation.event_id).where(Participation.user_id == user_id)))
+            )
+            .where(Event.state == EventState.Active)
+            .order_by(Event.datetime_utc)
+            .limit(5)  # TODO pagination
+        ).all()
 
-@bot.message_handler(commands=["join_event"])
-def cmd_join_event(message: Message):
-    args = message.text.split(maxsplit=1)
-    if len(args) < 2 or not args[1].isdigit():
-        bot.reply_to(message, "Usage: /join_event <event_id>")
+    if not events:
+        bot.reply_to(msg, "You have no upcoming events.")
         return
 
-    event_id = int(args[1])
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-
-    c.execute("SELECT title FROM events WHERE id = ?", (event_id,))
-    row = c.fetchone()
-    if row is None:
-        bot.reply_to(message, "❌ Event not found.")
-        conn.close()
-        return
-
-    try:
-        c.execute(
-            "INSERT INTO participants (event_id, user_id) VALUES (?, ?)",
-            (event_id, message.from_user.id),
+    for ev in events:
+        text = f"<b>{ev.title}</b> — {ev.datetime_utc.strftime('%Y‑%m‑%d %H:%M UTC')}\n{snippet(ev.description)}"
+        buttons = types.InlineKeyboardMarkup(row_width=3)
+        buttons.add(
+            types.InlineKeyboardButton("Details", callback_data=cb(ev.id, "details")),
+            types.InlineKeyboardButton("Edit", callback_data=cb(ev.id, "edit")),
+            types.InlineKeyboardButton("Delete" if ev.owner_id == user_id else "Leave", callback_data=cb(ev.id, "delete")),
         )
-        conn.commit()
-        bot.reply_to(message, f"🎉 You joined event #{event_id}: <b>{row[0]}</b>")
-    except sqlite3.IntegrityError:
-        bot.reply_to(message, "ℹ️ You have already joined this event.")
-    finally:
-        conn.close()
+        bot.send_message(msg.chat.id, text, reply_markup=buttons)
 
+# == Friends' events ==
+@bot.message_handler(func=lambda m: m.text == "🧑‍🤝‍🧑 Friends' events")
+def handle_friends_events(msg: types.Message):
+    user_id = msg.from_user.id
 
-@bot.message_handler(commands=["events"])
-def cmd_events(message: Message):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        "SELECT id, title, ts FROM events ORDER BY ts DESC LIMIT 20"
-    )
-    rows = c.fetchall()
-    conn.close()
+    with SessionLocal() as db:
+        friend_ids = db.scalars(
+            select(Friendship.followee_id).where(Friendship.follower_id == user_id)
+        ).all()
+        if not friend_ids:
+            bot.reply_to(msg, "You are not following anyone yet. Join an event through a deeplink first!")
+            return
 
-    if not rows:
-        bot.reply_to(message, "No events yet. Create one with /create_event!")
+        events = db.scalars(
+            select(Event)
+            .where(Event.owner_id.in_(friend_ids))
+            .where(Event.state == EventState.Active)
+            .order_by(Event.datetime_utc)
+            .limit(5)  # TODO pagination
+        ).all()
+
+    if not events:
+        bot.reply_to(msg, "No upcoming events from your friends.")
         return
 
-    lines = ["📅 <b>Recent events</b>:"]
-    for eid, title, ts in rows:
-        lines.append(f"{eid}. {title} (created {ts})")
-    bot.reply_to(message, "\n".join(lines))
+    for ev in events:
+        joined = "✔️ Joined" if user_joined_event(user_id, ev.id) else "Join"
+        text = f"<b>{ev.title}</b> — {ev.datetime_utc.strftime('%Y‑%m‑%d %H:%M UTC')}\n{snippet(ev.description)}"
+        buttons = types.InlineKeyboardMarkup(row_width=3)
+        buttons.add(
+            types.InlineKeyboardButton("Details", callback_data=cb(ev.id, "details")),
+            types.InlineKeyboardButton(joined, callback_data=cb(ev.id, "join")),
+            types.InlineKeyboardButton("Unfriend", callback_data=cb(ev.id, "unfriend")),
+        )
+        bot.send_message(msg.chat.id, text, reply_markup=buttons)
 
 
-@bot.message_handler(commands=["my_events"])
-def cmd_my_events(message: Message):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT id, title, ts
-        FROM events
-        WHERE creator_id = ?
-        ORDER BY ts DESC
-        """,
-        (message.from_user.id,),
-    )
-    rows = c.fetchall()
-    conn.close()
+# == Public events ==
+@bot.message_handler(func=lambda m: m.text == "🌐 Public events")
+def handle_public_events(msg: types.Message):
+    user_id = msg.from_user.id
+    with SessionLocal() as db:
+        events = db.scalars(
+            select(Event)
+            .where(Event.visibility == EventVisibility.Public)
+            .where(Event.state == EventState.Active)
+            .order_by(Event.datetime_utc)
+            .limit(5)
+        ).all()
 
-    if not rows:
-        bot.reply_to(message, "You haven't created any events yet.")
+    if not events:
+        bot.reply_to(msg, "No public events right now.")
         return
 
-    lines = ["🗓️ <b>Your events</b>:"]
-    for eid, title, ts in rows:
-        lines.append(f"{eid}. {title} (created {ts})")
-    bot.reply_to(message, "\n".join(lines))
+    for ev in events:
+        joined = "✔️ Joined" if user_joined_event(user_id, ev.id) else "Join"
+        text = f"<b>{ev.title}</b> — {ev.datetime_utc.strftime('%Y‑%m‑%d %H:%M UTC')}\n{snippet(ev.description)}"
+        buttons = types.InlineKeyboardMarkup(row_width=2)
+        buttons.add(
+            types.InlineKeyboardButton("Details", callback_data=cb(ev.id, "details")),
+            types.InlineKeyboardButton(joined, callback_data=cb(ev.id, "join")),
+        )
+        bot.send_message(msg.chat.id, text, reply_markup=buttons)
 
 
-# --- Main loop -------------------------------------------------------------
+# == Free‑text shortcut (Create event wizard) ==
+
+WIZARD_STATE = {}
+
+@bot.message_handler(content_types=["text"], func=lambda m: m.text not in {
+    "📅 My events", "🧑‍🤝‍🧑 Friends' events", "🌐 Public events", "➕ Create event", "⚙️ Settings"
+})
+def handle_free_text(msg: types.Message):
+    user_id = msg.from_user.id
+    WIZARD_STATE[user_id] = {"step": "title", "data": {"description": msg.text.strip()[:200]}}
+    bot.reply_to(msg, "Great! What's the <b>title</b> of your event? (3‑80 chars)")
+
+@bot.message_handler(func=lambda m: m.text == "➕ Create event")
+def handle_create_event(msg: types.Message):
+    user_id = msg.from_user.id
+    WIZARD_STATE[user_id] = {"step": "title", "data": {}}
+    bot.reply_to(msg, "Let's create a new event! What's the <b>title</b>? (3‑80 chars)")
+
+# ... more wizard handlers here (title -> description -> datetime -> tags -> location -> visibility)
+
+# == Callback Query Handler ==
+@bot.callback_query_handler(func=lambda call: call.data.startswith("evt:"))
+def handle_callback(call: types.CallbackQuery):
+    parts = call.data.split(":")
+    if len(parts) != 4:
+        bot.answer_callback_query(call.id, "ERR_BAD_ACTION")
+        return
+    _, event_id, _, verb = parts
+
+    with SessionLocal() as db:
+        ev = db.get(Event, event_id)
+        if not ev:
+            bot.answer_callback_query(call.id, "ERR_NOT_FOUND")
+            return
+
+    if verb == "details":
+        send_event_details(call.message.chat.id, ev, call.from_user.id)
+    elif verb == "join":
+        toggle_join_event(call, ev)
+    elif verb == "delete":
+        delete_or_leave_event(call, ev)
+    elif verb == "edit":
+        start_edit_wizard(call, ev)
+    elif verb == "unfriend":
+        unfriend_author(call, ev)
+    else:
+        bot.answer_callback_query(call.id, "ERR_BAD_ACTION")
+
+# Helper implementations -------------------------------------------------------
+
+def user_joined_event(user_id: int, event_id: str) -> bool:
+    with SessionLocal() as db:
+        return db.get(Participation, {"user_id": user_id, "event_id": event_id}) is not None
+
+
+def send_event_details(chat_id: int, ev: Event, viewer_id: int):
+    joined_indicator = "✔️ Joined" if user_joined_event(viewer_id, ev.id) else "Join"
+    text = (
+        f"<b>{ev.title}</b>\n"
+        f"Date: {ev.datetime_utc.strftime('%Y‑%m‑%d %H:%M UTC')}\n"
+        f"Location: {ev.location_txt}\n"
+        f"Tags: {ev.tags}\n\n"
+        f"{ev.description}"
+    )
+    buttons = types.InlineKeyboardMarkup(row_width=2)
+    buttons.add(
+        types.InlineKeyboardButton("Deeplink", url=f"https://t.me/{bot.get_me().username}?start=evt_{ev.id}"),
+        types.InlineKeyboardButton(joined_indicator, callback_data=cb(ev.id, "join"))
+    )
+    bot.send_message(chat_id, text, reply_markup=buttons)
+
+
+def toggle_join_event(call: types.CallbackQuery, ev: Event):
+    user_id = call.from_user.id
+    with SessionLocal() as db:
+        participation = db.get(Participation, {"user_id": user_id, "event_id": ev.id})
+        if participation:
+            db.delete(participation)
+            db.commit()
+            bot.answer_callback_query(call.id, "You left the event.")
+        else:
+            db.add(Participation(user_id=user_id, event_id=ev.id))
+            # Friendship auto‑create
+            if not db.get(Friendship, {"follower_id": user_id, "followee_id": ev.owner_id}):
+                db.add(Friendship(follower_id=user_id, followee_id=ev.owner_id))
+            db.commit()
+            bot.answer_callback_query(call.id, "You joined the event!")
+
+
+def delete_or_leave_event(call: types.CallbackQuery, ev: Event):
+    user_id = call.from_user.id
+    with SessionLocal() as db:
+        if ev.owner_id == user_id:
+            ev.state = EventState.Deleted
+            db.commit()
+            bot.answer_callback_query(call.id, "Event deleted.")
+        else:
+            part = db.get(Participation, {"user_id": user_id, "event_id": ev.id})
+            if part:
+                db.delete(part)
+                db.commit()
+                bot.answer_callback_query(call.id, "You left the event.")
+            else:
+                bot.answer_callback_query(call.id, "ERR_NO_PERMISSION")
+
+
+def start_edit_wizard(call: types.CallbackQuery, ev: Event):
+    # PoC: simplify edit by deleting & re‑creating via wizard TODO future
+    bot.answer_callback_query(call.id, "Edit flow not yet implemented in PoC.")
+
+
+def unfriend_author(call: types.CallbackQuery, ev: Event):
+    user_id = call.from_user.id
+    with SessionLocal() as db:
+        fr = db.get(Friendship, {"follower_id": user_id, "followee_id": ev.owner_id})
+        if fr:
+            db.delete(fr)
+            db.commit()
+            bot.answer_callback_query(call.id, "Unfriended.")
+        else:
+            bot.answer_callback_query(call.id, "ERR_NOT_FOUND")
+
+# ──────────────────────────────────────────────────────────────
+# 5. Entry‑point
+# ──────────────────────────────────────────────────────────────
+
+def main():
+    log.info("Starting Invevent Bot PoC…")
+    bot.infinity_polling(skip_pending=True)
+
+
 if __name__ == "__main__":
-    print("Bot is running… Press Ctrl+C to stop.")
-    bot.infinity_polling()
+    main()
