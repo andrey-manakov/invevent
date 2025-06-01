@@ -1,14 +1,22 @@
 from telebot import TeleBot, types
 import os
+import logging
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN missing in .env")
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("invevent")
+
+# Initialize bot
 bot = TeleBot(BOT_TOKEN, parse_mode="HTML")
 
+# Define main keyboard
 MAIN_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 MAIN_KB.add(
     "📅 My events",
@@ -28,5 +36,5 @@ def cmd_start(msg):
     )
 
 if __name__ == "__main__":
-    print("Bot is starting...")
+    log.info("Bot is starting...")
     bot.infinity_polling(skip_pending=True, timeout=30)
