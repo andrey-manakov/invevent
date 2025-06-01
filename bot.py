@@ -9,7 +9,6 @@ if not BOT_TOKEN:
 
 bot = TeleBot(BOT_TOKEN, parse_mode="HTML")
 
-# Keyboard setup
 MAIN_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 MAIN_KB.add(
     "📅 My events",
@@ -29,5 +28,5 @@ def cmd_start(msg):
     )
 
 if __name__ == "__main__":
-    print("Bot started with polling...")
+    print("Bot is starting...")
     bot.infinity_polling(skip_pending=True, timeout=30)
