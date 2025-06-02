@@ -2,6 +2,7 @@
 import uuid
 from datetime import datetime, timezone, timedelta
 from telebot import types
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 from .wizard import STEPS, start as wiz_start, get as wiz_get, reset as wiz_reset, snippet
 from .models import Event, EventVisibility
 from .database import SessionLocal
@@ -133,20 +134,74 @@ def register_wizard(bot):
                 bot.send_message(user_id, "Select a tag (one only):", reply_markup=tag_kb)
                 return
 
-            # If user tapped “moscow” → finalize immediately
-            if m.text == "moscow":
-                w["location_txt"] = "Moscow"
-            # If user tapped “save” → only valid if they already sent free‐text location
-            elif m.text == "save":
-                if "location_txt_input" not in w:
-                    bot.send_message(user_id, "Please type your custom location first, or tap “moscow”.")
-                    return
-                w["location_txt"] = w.pop("location_txt_input")
-            else:
-                # any other text is taken as “free‐text location draft”
-                w["location_txt_input"] = m.text
-                bot.send_message(user_id, "Saved your text. Now tap “save” to confirm, or “moscow” for Moscow.")
+            # Only “moscow” accepted here
+            if m.text != "moscow":
+                bot.send_message(user_id, "Please tap “moscow” to choose the location, or “back”/“cancel”.")
                 return
+            w["location_txt"] = "Moscow"
+            # advance to Visibility step
+            w["step"] = 5
+            vis_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            vis_kb.add("public", "private", "back", "cancel")
+            bot.send_message(user_id, "Choose visibility:", reply_markup=vis_kb)
+            return
+
+        # Step 5: Visibility (final step: save event)
+        if step == 5:
+            if m.text == "back":
+                w["step"] = 4
+                loc_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+                loc_kb.add("moscow", "back", "cancel")
+                bot.send_message(user_id, "Location? (tap “moscow”)", reply_markup=loc_kb)
+                return
+            if m.text not in ("public", "private"):
+                bot.send_message(user_id, "Please tap “public”, “private”, “back”, or “cancel”.")
+                return
+
+            # Save visibility choice
+            w["visibility"] = EventVisibility.Public if m.text == "public" else EventVisibility.Private
+
+            # Create the Event, then send two deep‐links:
+            #  1) “description” link → full event info & record friendship
+            #  2) “join” link → join the event & record friendship
+            with SessionLocal() as db:
+                ev = Event(
+                   id=str(uuid.uuid4()),
+                    owner_id=user_id,
+                    title=w["title"],
+                    description=w["description"],
+                    datetime_utc=w["datetime_utc"],
+                    location_txt=w["location_txt"],
+                    visibility=w["visibility"],
+                    tags=",".join(w.get("tags", []))
+                )
+                db.add(ev)
+                db.commit()
+
+            # Build inline keyboard with two deep‐links
+            # Replace YourBotUsername with your actual bot username (no brackets)
+            desc_link = f"https://t.me/YourBotUsername?start=desc_{ev.id}"
+            join_link = f"https://t.me/YourBotUsername?start=join_{ev.id}"
+            inline_kb = InlineKeyboardMarkup()
+            inline_kb.add(
+                InlineKeyboardButton("description", url=desc_link),
+                InlineKeyboardButton("join", url=join_link)
+            )
+
+            # Send brief info (no description) with inline buttons
+            summary = (
+                f"<b>{w['title']}</b>\n"
+                f"🗓️ {w['datetime_utc']:%Y-%m-%d %H:%M UTC}\n"
+                f"📍 {w['location_txt']}\n"
+                f"🔒 {'Private' if w['visibility']==EventVisibility.Private else 'Public'}"
+            )
+            bot.send_message(user_id, summary, parse_mode="HTML", reply_markup=inline_kb)
+
+            # Done: reset wizard, back to main menu
+            wiz_reset(user_id)
+            from .bot import MAIN_KB
+            bot.send_message(user_id, "Event created! Back to main menu.", reply_markup=MAIN_KB)
+            return
 
             # All required fields are now in w: title, description, datetime_utc, tags, location_txt.
             # Create the Event object and show brief info (no description), plus a deeplink.
