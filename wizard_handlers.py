@@ -1,6 +1,6 @@
 """Full create‑event wizard handlers"""
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from telebot import types
 from .wizard import STEPS, start as wiz_start, get as wiz_get, reset as wiz_reset, snippet
 from .models import Event, EventVisibility
@@ -166,7 +166,7 @@ def register_wizard(bot):
 
             # Send brief confirmation (no description) + deeplink
             # Replace <YourBotUsername> with your actual bot username
-            link = f"https://t.me/<YourBotUsername>?start={ev.id}"
+            link = f"https://t.me/InvEventBot?start={ev.id}"
             text = (
                 f"<b>{w['title']}</b>\n"
                 f"🗓️ {w['datetime_utc']:%Y-%m-%d %H:%M UTC}\n"
