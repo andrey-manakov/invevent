@@ -1,8 +1,9 @@
+
 import os, pathlib
 from dotenv import load_dotenv
 
-for p in [pathlib.Path(__file__).resolve().parents[1]/".env",
-          pathlib.Path(__file__).resolve().parents[2]/".env"]:
+for p in (pathlib.Path(__file__).resolve().parents[1]/".env",
+          pathlib.Path(__file__).resolve().parents[2]/".env"):
     if p.exists():
         load_dotenv(p)
         break

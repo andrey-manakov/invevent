@@ -1,0 +1,1 @@
+def cb(eid,act): return f"evt:{eid}:act:{act}"

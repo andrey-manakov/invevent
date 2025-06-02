@@ -1,8 +1,9 @@
+
 from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum as PyEnum
 from sqlalchemy import String,Integer,DateTime,ForeignKey,Text,Enum as SAEnum
-from sqlalchemy.orm import mapped_column, Mapped
+from sqlalchemy.orm import Mapped,mapped_column
 from .database import Base
 
 class User(Base):
