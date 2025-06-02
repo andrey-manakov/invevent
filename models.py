@@ -14,7 +14,7 @@ class User(Base):
 
 class EventVisibility(str,PyEnum):
     Public="Public"
-    Friends="Private"
+    Private="Private"
 
 class EventState(str,PyEnum):
     Active="Active"
