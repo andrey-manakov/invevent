@@ -9,65 +9,174 @@ TAGS = ["🎉 Party","🎮 Gaming","🍽️ Food","🎬 Cinema"]
 
 def register_wizard(bot):
 
+    # ——— STEP 0: Start dialog (ask for title) ———
     @bot.message_handler(func=lambda m: m.text == "➕ Create event")
     def start(m):
         wiz_start(m.from_user.id)
-        bot.reply_to(m,"Event title?")
+        # Reply with “Title?” and a keyboard [ “default”, “cancel” ]
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        kb.add("default", "cancel")
+        bot.reply_to(m, "Event title?", reply_markup=kb)
 
-    @bot.message_handler(func=lambda m: True)
-    def flow(m):
-        w = wiz_get(m.from_user.id)
-        if not w: return
-        step = STEPS[w["step"]]
-        if step == "title":
-            w["title"] = snippet(m.text,80); w["step"] += 1
-            bot.reply_to(m,"Description?")
-        elif step == "description":
-            w["description"] = snippet(m.text,200); w["step"] += 1
-            bot.reply_to(m,"Date & time YYYY-MM-DD HH:MM?")
-        elif step == "datetime":
-            try:
-                dt = datetime.strptime(m.text,"%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-                w["datetime_utc"] = dt; w["step"] += 1
-                kb = types.ReplyKeyboardMarkup(resize_keyboard=True,one_time_keyboard=True,row_width=3)
-                kb.add(*TAGS,"done")
-                bot.reply_to(m,"Tag (repeat) then 'done':",reply_markup=kb)
-            except ValueError:
-                bot.reply_to(m,"Wrong format.")
-        elif step == "tags":
-            if m.text.lower()=="done":
-                w["step"] += 1; bot.reply_to(m,"Location?")
+    #
+    # ——— UNIVERSAL WIZARD HANDLER: catch all messages while in a wizard state ———
+    @bot.message_handler(func=lambda m: wiz_get(m.from_user.id) is not None)
+    def _wizard_steps(m):
+        user_id = m.from_user.id
+        w = wiz_get(user_id)
+        step = w["step"]
+
+        # Cancel at any step
+        if m.text == "cancel":
+            wiz_reset(user_id)
+            from .bot import MAIN_KB
+            bot.send_message(user_id, "Operation cancelled. Back to main menu.", reply_markup=MAIN_KB)
+            return
+
+        # Step 0: Title
+        if step == 0:
+            if m.text == "default":
+                # random suffix for title
+                rnd = uuid.uuid4().hex[:4]
+                w["title"] = f"Event title {rnd}"
             else:
-                w.setdefault("tags",[]).append(snippet(m.text,20))
-        elif step == "location":
-            w["location_txt"] = snippet(m.text,120); w["step"] += 1
-            kb = types.ReplyKeyboardMarkup(resize_keyboard=True,one_time_keyboard=True)
-            kb.add("Public","Friends")
-            bot.reply_to(m,"Visibility?",reply_markup=kb)
-        elif step == "visibility":
-            vis = m.text.capitalize()
-            if vis not in ["Public","Friends"]:
-                bot.reply_to(m,"Choose Public or Friends"); return
-            w["visibility"] = EventVisibility(vis); w["step"] += 1
-            summary=(f"<b>{w['title']}</b>\n{w['description']}\n\n🗓️ {w['datetime_utc']:%Y-%m-%d %H:%M UTC}"
-                     f"\n📍{w['location_txt']}\n🏷️ {', '.join(w.get('tags',[]))}\n🔒{w['visibility'].value}")
-            kb=types.InlineKeyboardMarkup()
-            kb.add(types.InlineKeyboardButton("Create",callback_data="wiz:create"),
-                   types.InlineKeyboardButton("Cancel",callback_data="wiz:cancel"))
-            bot.reply_to(m,summary,parse_mode="HTML",reply_markup=kb)
+                # any other text is treated as custom title
+                w["title"] = m.text
+            # advance
+            w["step"] = 1
+            # Ask for description
+            kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            kb.add("default", "back", "cancel")
+            bot.send_message(user_id, "Event description?", reply_markup=kb)
+            return
 
-    @bot.callback_query_handler(func=lambda c: c.data in ("wiz:create","wiz:cancel"))
-    def done(c):
-        w=wiz_get(c.from_user.id)
-        if not w:
-            bot.answer_callback_query(c.id,"Expired"); return
-        if c.data=="wiz:cancel":
-            wiz_reset(c.from_user.id); bot.answer_callback_query(c.id,"Cancelled"); return
-        with SessionLocal() as db:
-            ev=Event(id=str(uuid.uuid4()), owner_id=c.from_user.id,
-                     title=w["title"], description=w["description"],
-                     datetime_utc=w["datetime_utc"], location_txt=w["location_txt"],
-                     visibility=w["visibility"], tags=",".join(w.get("tags",[])))
-            db.add(ev); db.commit()
-        wiz_reset(c.from_user.id)
-        bot.answer_callback_query(c.id,"Created!")
+        # Step 1: Description
+        if step == 1:
+            if m.text == "back":
+                w["step"] = 0
+                # Go back to title
+                kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+                kb.add("default", "cancel")
+                bot.send_message(user_id, "Event title?", reply_markup=kb)
+                return
+            if m.text == "default":
+                rnd = uuid.uuid4().hex[:4]
+                w["description"] = f"Description {rnd}"
+            else:
+                w["description"] = m.text
+            # advance
+            w["step"] = 2
+            # Ask for date & time
+            kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            kb.add("today", "tomorrow", "back", "cancel")
+            bot.send_message(user_id, "Choose date & time:", reply_markup=kb)
+            return
+
+        # Step 2: Date & time
+        if step == 2:
+            if m.text == "back":
+                w["step"] = 1
+                kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+                kb.add("default", "back", "cancel")
+                bot.send_message(user_id, "Event description?", reply_markup=kb)
+                return
+            now_utc = datetime.now(timezone.utc)
+            if m.text == "today":
+                w["datetime_utc"] = now_utc
+            elif m.text == "tomorrow":
+                w["datetime_utc"] = now_utc.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+            else:
+                bot.send_message(user_id, "Please tap one of the buttons: “today” or “tomorrow”.")
+                return
+            # advance
+            w["step"] = 3
+            # Ask for tag (only one)
+            tag_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            for t in TAGS:
+                tag_kb.add(t)
+            tag_kb.add("Other", "back", "cancel")
+            bot.send_message(user_id, "Select a tag (one only):", reply_markup=tag_kb)
+            return
+
+        # Step 3: Tag
+        if step == 3:
+            if m.text == "back":
+                w["step"] = 2
+                kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+                kb.add("today", "tomorrow", "back", "cancel")
+                bot.send_message(user_id, "Choose date & time:", reply_markup=kb)
+                return
+            if m.text in TAGS:
+                w["tags"] = [m.text]
+            elif m.text == "Other":
+                w["tags"] = ["Other"]
+            else:
+                bot.send_message(user_id, "Please select exactly one of the tag buttons (or “Other”).")
+                return
+            # advance
+            w["step"] = 4
+            # Ask for location
+            loc_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            loc_kb.add("moscow", "save", "back", "cancel")
+            bot.send_message(user_id, "Location? (type a custom place or tap a button)", reply_markup=loc_kb)
+            return
+
+        # Step 4: Location
+        if step == 4:
+            # If user tapped “back”
+            if m.text == "back":
+                w["step"] = 3
+                tag_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+                for t in TAGS:
+                    tag_kb.add(t)
+                tag_kb.add("Other", "back", "cancel")
+                bot.send_message(user_id, "Select a tag (one only):", reply_markup=tag_kb)
+                return
+
+            # If user tapped “moscow” → finalize immediately
+            if m.text == "moscow":
+                w["location_txt"] = "Moscow"
+            # If user tapped “save” → only valid if they already sent free‐text location
+            elif m.text == "save":
+                if "location_txt_input" not in w:
+                    bot.send_message(user_id, "Please type your custom location first, or tap “moscow”.")
+                    return
+                w["location_txt"] = w.pop("location_txt_input")
+            else:
+                # any other text is taken as “free‐text location draft”
+                w["location_txt_input"] = m.text
+                bot.send_message(user_id, "Saved your text. Now tap “save” to confirm, or “moscow” for Moscow.")
+                return
+
+            # All required fields are now in w: title, description, datetime_utc, tags, location_txt.
+            # Create the Event object and show brief info (no description), plus a deeplink.
+            with SessionLocal() as db:
+                ev = Event(
+                    id=str(uuid.uuid4()),
+                    owner_id=user_id,
+                    title=w["title"],
+                    description=w["description"],
+                    datetime_utc=w["datetime_utc"],
+                    location_txt=w["location_txt"],
+                    visibility=EventVisibility.Public,  # or default as needed
+                    tags=",".join(w.get("tags", []))
+                )
+                db.add(ev)
+                db.commit()
+
+            # Send brief confirmation (no description) + deeplink
+            # Replace <YourBotUsername> with your actual bot username
+            link = f"https://t.me/<YourBotUsername>?start={ev.id}"
+            text = (
+                f"<b>{w['title']}</b>\n"
+                f"🗓️ {w['datetime_utc']:%Y-%m-%d %H:%M UTC}\n"
+                f"📍 {w['location_txt']}\n"
+                f"🔗 {link}"
+            )
+            bot.send_message(user_id, text, parse_mode="HTML")
+
+            # Reset wizard and return to main menu
+            wiz_reset(user_id)
+            from .bot import MAIN_KB
+            bot.send_message(user_id, "Event created! Back to main menu.", reply_markup=MAIN_KB)
+            return
