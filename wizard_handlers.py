@@ -180,8 +180,8 @@ def register_wizard(bot):
 
             # Build inline keyboard with two deep‐links
             # Replace YourBotUsername with your actual bot username (no brackets)
-            desc_link = f"https://t.me/YourBotUsername?start=desc_{ev.id}"
-            join_link = f"https://t.me/YourBotUsername?start=join_{ev.id}"
+            desc_link = f"https://t.me/InvEventBot?start=desc_{ev.id}"
+            join_link = f"https://t.me/InvEventBot?start=join_{ev.id}"
             inline_kb = InlineKeyboardMarkup()
             inline_kb.add(
                 InlineKeyboardButton("description", url=desc_link),
