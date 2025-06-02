@@ -14,7 +14,7 @@ bot=TeleBot(BOT_TOKEN,parse_mode="HTML")
 Base.metadata.create_all(engine)
 
 MAIN_KB=types.ReplyKeyboardMarkup(resize_keyboard=True,row_width=2)
-MAIN_KB.add("📅 My events","🧑‍🤝‍🧑 Friends' events","🌐 Public events","➕ Create event")
+MAIN_KB.add("📅 My events","🧑‍🤝‍🧑 Friends' events","🌐 Public events","➕ Create event","⚙️ Settings")
 
 @bot.message_handler(commands=["start"])
 def start(m):

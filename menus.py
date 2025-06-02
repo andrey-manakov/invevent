@@ -5,6 +5,7 @@ from .database import SessionLocal
 from .models import Event, Participation, EventState, EventVisibility, Friendship
 from .helpers import cb
 from .wizard import snippet
+from .bot import MAIN_KB
 
 def register_menu(bot):
     # 📅 My events
@@ -68,3 +69,22 @@ def register_menu(bot):
             bot.send_message(msg.chat.id,
                              f"<b>{e.title}</b> — {e.datetime_utc:%Y-%m-%d %H:%M UTC}",
                              parse_mode="HTML", reply_markup=kb)
+    
+    # ⚙️ Settings
+    @bot.message_handler(func=lambda m: m.text == "⚙️ Settings")
+    def settings_menu(msg):
+        SETTINGS_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        SETTINGS_KB.add("🗑️ Delete events", "⬅️ Back")
+        bot.send_message(msg.chat.id, "Settings:", reply_markup=SETTINGS_KB)
+
+    @bot.message_handler(func=lambda m: m.text == "🗑️ Delete events")
+    def delete_events(msg):
+        with SessionLocal() as db:
+            db.query(Participation).delete()
+            db.query(Event).delete()
+            db.commit()
+        bot.reply_to(msg, "All events have been deleted.")
+
+    @bot.message_handler(func=lambda m: m.text == "⬅️ Back")
+    def back_to_main(msg):
+        bot.send_message(msg.chat.id, "Main menu:", reply_markup=MAIN_KB)
