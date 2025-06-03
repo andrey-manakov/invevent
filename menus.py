@@ -8,27 +8,26 @@ from .helpers import cb
 from .wizard import snippet
 
 def register_menu(bot):
-    print("Registering all menu handlers…")
-
-    @bot.message_handler(func=lambda m: True, content_types=['text'])
-    def _dump_incoming(msg):
-        # Dump the entire message for inspection
-        print("⮞ INCOMING MESSAGE:", msg.to_dict())
-        return False  # allow other handlers to still run
-    
     @bot.message_handler(regexp=r'^/start')
     def handle_start_cmd(msg):
-        print("↪ matched handle_start_cmd:", msg.text)
-        print("starting registering logic for start command")
         parts = msg.text.split(maxsplit=1)
-        print(f"splitting to parts {parts}")
-        if len(parts) < 2:
-            return  # no parameter
-
-        param = parts[1]
         user_id = msg.from_user.id
 
-        # Helper: make two-way friendship
+        # If no parameter after /start, treat as a plain start → send greeting + main menu
+        if len(parts) < 2:
+            from .bot import MAIN_KB
+            bot.send_message(
+                user_id,
+                f"<b>Hi {msg.from_user.first_name}!</b>\nPlan, share & join outings.",
+                parse_mode="HTML",
+                reply_markup=MAIN_KB
+            )
+            return
+
+        # Otherwise, process deep‐link parameters
+        param = parts[1]
+
+        # Helper: create two‐way friendship
         def make_friends(u1, u2):
             with SessionLocal() as db:
                 if not db.get(Friendship, {"follower_id": u1, "followee_id": u2}):
@@ -37,6 +36,7 @@ def register_menu(bot):
                     db.add(Friendship(follower_id=u2, followee_id=u1))
                 db.commit()
 
+        # “desc_<event_id>” deep‐link
         if param.startswith("desc_"):
             eid = param[5:]
             with SessionLocal() as db:
@@ -63,6 +63,7 @@ def register_menu(bot):
                 bot.send_message(user_id, text, parse_mode="HTML", reply_markup=inline_kb)
             return
 
+        # “join_<event_id>” deep‐link
         if param.startswith("join_"):
             eid = param[5:]
             with SessionLocal() as db:
@@ -89,6 +90,7 @@ def register_menu(bot):
                 )
                 bot.send_message(user_id, text, parse_mode="HTML", reply_markup=inline_kb)
             return
+
 
     # 📅 My events
     @bot.message_handler(func=lambda m: m.text == "📅 My events")

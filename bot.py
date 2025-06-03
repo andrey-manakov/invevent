@@ -22,10 +22,10 @@ MAIN_KB.add(
     "⚙️ Settings"
 )
 
-@bot.message_handler(commands=["start"])
-def start(m):
-    bot.send_message(m.chat.id,f"<b>Hi {m.from_user.first_name}!</b>\nPlan, share & join outings. in bot",
-                     parse_mode="HTML",reply_markup=MAIN_KB)
+# @bot.message_handler(commands=["start"])
+# def start(m):
+#     bot.send_message(m.chat.id,f"<b>Hi {m.from_user.first_name}!</b>\nPlan, share & join outings. in bot",
+#                      parse_mode="HTML",reply_markup=MAIN_KB)
 
 # register modules
 register_menu(bot)
