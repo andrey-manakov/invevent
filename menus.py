@@ -9,11 +9,11 @@ from .wizard import snippet
 
 def register_menu(bot):
     print("starting regidtering the menu commands")
-    @bot.message_handler(commands=['start'])
+    @bot.message_handler(regexp=r'^/start')
     def handle_start_cmd(msg):
         print("starting registering logic for start command")
         parts = msg.text.split(maxsplit=1)
-        print("splitting to parts {parts}")
+        print(f"splitting to parts {parts}")
         if len(parts) < 2:
             return  # no parameter
 
