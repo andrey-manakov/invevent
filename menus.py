@@ -11,6 +11,7 @@ def register_menu(bot):
     @bot.message_handler(commands=['start'])
     def handle_start_cmd(msg):
         parts = msg.text.split(maxsplit=1)
+        print("splitting to parts {parts}")
         if len(parts) < 2:
             return  # no parameter
 
