@@ -8,6 +8,7 @@ from .helpers import cb
 from .wizard import snippet
 
 def register_menu(bot):
+    print("starting regidtering the menu commands")
     @bot.message_handler(commands=['start'])
     def handle_start_cmd(msg):
         parts = msg.text.split(maxsplit=1)
