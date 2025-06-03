@@ -34,7 +34,7 @@ def register_routes(bot):
     def _start(m):
         with SessionLocal() as db:
             ensure_user(db,m.from_user)
-        bot.send_message(m.chat.id,f"<b>Hi {m.from_user.first_name}!</b>\nPlan, share & join outings.",
+        bot.send_message(m.chat.id,f"<b>Hi {m.from_user.first_name}!</b>\nPlan, share & join outings. in routes",
                          parse_mode="HTML",reply_markup=main_kb())
 
     # My events
