@@ -8,9 +8,17 @@ from .helpers import cb
 from .wizard import snippet
 
 def register_menu(bot):
-    print("starting regidtering the menu commands")
+    print("Registering all menu handlers…")
+
+    @bot.message_handler(func=lambda m: True)
+    def _log_all_messages(msg):
+        print(f"⮞ GOT MESSAGE: {repr(msg.text)}")
+        # Let other handlers still process it:
+        return False
+    
     @bot.message_handler(regexp=r'^/start')
     def handle_start_cmd(msg):
+        print("↪ matched handle_start_cmd:", msg.text)
         print("starting registering logic for start command")
         parts = msg.text.split(maxsplit=1)
         print(f"splitting to parts {parts}")
