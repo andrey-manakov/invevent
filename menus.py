@@ -10,11 +10,11 @@ from .wizard import snippet
 def register_menu(bot):
     print("Registering all menu handlers…")
 
-    @bot.message_handler(func=lambda m: True)
-    def _log_all_messages(msg):
-        print(f"⮞ GOT MESSAGE: {repr(msg.text)}")
-        # Let other handlers still process it:
-        return False
+    @bot.message_handler(func=lambda m: True, content_types=['text'])
+    def _dump_incoming(msg):
+        # Dump the entire message for inspection
+        print("⮞ INCOMING MESSAGE:", msg.to_dict())
+        return False  # allow other handlers to still run
     
     @bot.message_handler(regexp=r'^/start')
     def handle_start_cmd(msg):
