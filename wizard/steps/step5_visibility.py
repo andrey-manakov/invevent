@@ -1,7 +1,7 @@
 # wizard/steps/step5_visibility.py
 
 import uuid
-from telebot import InlineKeyboardButton, InlineKeyboardMarkup
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 from ..models import Event, EventVisibility
 from ..database import SessionLocal
 from ..wizard import reset as wiz_reset
