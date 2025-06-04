@@ -2,10 +2,10 @@
 
 import uuid
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
-from ..models import Event, EventVisibility
-from ..database import SessionLocal
-from ..wizard import reset as wiz_reset
-from ..bot import MAIN_KB  # used to show the main menu keyboard
+from invevent.models   import Event, EventVisibility
+from invevent.database import SessionLocal
+from invevent.wizard   import reset as wiz_reset
+from invevent.bot      import MAIN_KB
 
 def handle(bot, m, w):
     """
