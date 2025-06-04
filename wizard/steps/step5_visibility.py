@@ -54,8 +54,8 @@ def handle(bot, m, w):
         db.commit()
 
     # 5) Build deep‐links (description & join)
-    desc_link = f"https://t.me/InvEventBot?start={ev.id}&show=description"
-    join_link = f"https://t.me/InvEventBot?start={ev.id}&action=join"
+    desc_link = f"https://t.me/InvEventBot?start=desc_{ev.id}"
+    join_link = f"https://t.me/InvEventBot?start=join_{ev.id}"
 
     inline_kb = InlineKeyboardMarkup(row_width=2)
     inline_kb.add(
