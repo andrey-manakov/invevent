@@ -46,7 +46,7 @@ def register_dispatcher(bot):
         else:
             # If for some reason step is out of range, reset and inform user
             wiz_reset(user_id)
-            from .bot import MAIN_KB
+            from ..bot import MAIN_KB
             bot.send_message(
                 user_id,
                 "An error occurred in the wizard. Returning to main menu.",
