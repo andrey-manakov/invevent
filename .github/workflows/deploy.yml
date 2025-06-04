@@ -10,9 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Debug SSH connection
-      run: |
-        ssh -vvv -i ~/.ssh/id_rsa ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} echo "SSH connection OK"  
 
     - name: Checkout code
       uses: actions/checkout@v3
@@ -23,6 +20,10 @@ jobs:
         echo "${{ secrets.VPS_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Debug SSH connection
+      run: |
+        ssh -vvv -i ~/.ssh/id_rsa ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} echo "SSH connection OK"  
 
     - name: Deploy via SCP
       run: |
