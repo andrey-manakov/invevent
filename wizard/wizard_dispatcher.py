@@ -34,7 +34,7 @@ def register_dispatcher(bot):
         # 1) Cancel at any time
         if m.text == "cancel":
             wiz_reset(user_id)
-            from .bot import MAIN_KB
+            from ..bot import MAIN_KB
             bot.send_message(user_id, "Operation cancelled. Back to main menu.", reply_markup=MAIN_KB)
             return
 
