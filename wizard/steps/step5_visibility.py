@@ -1,6 +1,7 @@
 # wizard/steps/step5_visibility.py
 
 import uuid
+from telebot import types
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 from invevent.models   import Event, EventVisibility
 from invevent.database import SessionLocal
