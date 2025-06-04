@@ -1,11 +1,11 @@
 
 import logging
 from telebot import TeleBot, types
+from .callbacks import register_callbacks
 from .config import BOT_TOKEN
+from .database import Base, engine
 from .menus import register_menu
 from .wizard_handlers import register_wizard
-from .callbacks import register_callbacks
-from .database import Base, engine
 
 logging.basicConfig(level=logging.INFO)
 log=logging.getLogger("invevent")
