@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Debug SSH connection
+      run: |
+        ssh -vvv -i ~/.ssh/id_rsa ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} echo "SSH connection OK"  
+
     - name: Checkout code
       uses: actions/checkout@v3
 
