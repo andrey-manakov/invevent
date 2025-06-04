@@ -5,7 +5,7 @@ from sqlalchemy import select
 from .database import SessionLocal
 from .models import Event, Participation, EventState, EventVisibility, Friendship, User
 from .helpers import cb
-from .wizard import snippet
+# from .wizard import snippet
 
 def register_menu(bot):
     @bot.message_handler(regexp=r'^/start')

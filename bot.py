@@ -5,7 +5,9 @@ from .callbacks import register_callbacks
 from .config import BOT_TOKEN
 from .database import Base, engine
 from .menus import register_menu
-from .wizard_handlers import register_wizard
+# from .wizard_handlers import register_wizard
+from .wizard.wizard_start import register_start
+from .wizard.wizard_dispatcher import register_dispatcher
 
 logging.basicConfig(level=logging.INFO)
 log=logging.getLogger("invevent")
@@ -29,7 +31,9 @@ MAIN_KB.add(
 
 # register modules
 register_menu(bot)
-register_wizard(bot)
+# register_wizard(bot)
+register_start(bot)
+register_dispatcher(bot)
 register_callbacks(bot)
 
 def main():
