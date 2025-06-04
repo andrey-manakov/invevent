@@ -23,7 +23,7 @@ class EventState(str,PyEnum):
 
 class Event(Base):
     __tablename__="events"
-    id:Mapped[str]=mapped_column(String(36),primarE_key=True)
+    id:Mapped[str]=mapped_column(String(36),primary_key=True)
     owner_id:Mapped[int]=mapped_column(Integer,ForeignKey("users.id"))
     title:Mapped[str]=mapped_column(String(80))
     description:Mapped[str]=mapped_column(Text)
