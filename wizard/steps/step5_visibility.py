@@ -5,7 +5,7 @@ from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 from invevent.models   import Event, EventVisibility
 from invevent.database import SessionLocal
 from invevent.wizard   import reset as wiz_reset
-from invevent.bot      import MAIN_KB
+# from invevent.bot      import MAIN_KB
 
 def handle(bot, m, w):
     """
@@ -73,4 +73,6 @@ def handle(bot, m, w):
 
     # 7) Reset wizard, go back to main menu
     wiz_reset(user_id)
+    # Defer MAIN_KB import to here, not at module top
+    from invevent.bot import MAIN_KB
     bot.send_message(user_id, "Event created! Back to main menu.", reply_markup=MAIN_KB)
