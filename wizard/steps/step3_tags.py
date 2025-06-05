@@ -26,12 +26,13 @@ def handle(bot, m, w):
         bot.send_message(user_id, "Please select exactly one of the tag buttons (or “Other”).")
         return
 
-    # 3) Advance to step 4, ask for location
+    # 3) Advance to step 4, ask for location via map or text
     w["step"] = 4
-    loc_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    loc_kb.add("moscow", "back", "cancel")
+    loc_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+    loc_kb.add(types.KeyboardButton("📍 Send my location on map", request_location=True))
+    loc_kb.add("back", "cancel")
     bot.send_message(
-        user_id, 
-        "Location? (type a custom place or tap a button)", 
+        user_id,
+        "📍 Please tap the button to share your location on the map, or type a custom address.",
         reply_markup=loc_kb
     )
