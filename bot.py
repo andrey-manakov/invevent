@@ -36,6 +36,11 @@ register_start(bot)
 register_dispatcher(bot)
 register_callbacks(bot)
 
+try:
+    bot.send_message("@andrey-manakov", "Bot started")
+except Exception as e:
+    log.warning("Failed to notify startup: %s", e)
+
 def main():
     log.info("Polling...")
     bot.infinity_polling(skip_pending=True,timeout=30)
