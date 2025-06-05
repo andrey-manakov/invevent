@@ -8,7 +8,7 @@ your_project_root/
 ├── callbacks.py
 ├── database.py
 ├── helpers.py
-├── menus.py
+├── menus/                        ← menu handlers package
 ├── models.py
 ├── routes.py
 │
