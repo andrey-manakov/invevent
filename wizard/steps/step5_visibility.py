@@ -76,10 +76,19 @@ def handle(bot, m, w):
     )
 
     # 6) Send summary (no description text) with inline buttons
+    # Build a clickable map link if location_txt contains coordinates "lat,lon"
+    loc_txt = w.get("location_txt", "")
+    if "," in loc_txt:
+        lat, lon = loc_txt.split(",", 1)
+        map_url = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+        location_display = f'<a href="{map_url}">Посмотреть на карте</a>'
+    else:
+        location_display = loc_txt
+
     summary = (
         f"<b>{w['title']}</b>\n"
         f"🗓️ {w['datetime_utc']:%Y-%m-%d %H:%M UTC}\n"
-        f"📍 {w['location_txt']}\n"
+        f"📍 {location_display}\n"
         f"🔒 {'Private' if w['visibility'] == EventVisibility.Private else 'Public'}"
     )
     bot.send_message(user_id, summary, parse_mode="HTML", reply_markup=inline_kb)
