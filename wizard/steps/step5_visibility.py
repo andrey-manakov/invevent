@@ -61,7 +61,8 @@ def handle(bot, m, w):
             address=w.get("address", None),
             visibility=w["visibility"],
             tags=",".join(w.get("tags", []))
-        )        db.add(ev)
+        )        
+        db.add(ev)
         db.commit()
 
     # 5) Build deep‐links (description & join)
