@@ -15,12 +15,12 @@ def handle(bot, m, w):
     """
     user_id = m.from_user.id
 
-    # 1) Back → go to step 4
+    # 1) Back → return to step 4 (location)
     if m.text == "back":
         w["step"] = 4
-        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        kb.add("moscow", "back", "cancel")
-        bot.send_message(user_id, "Location? (tap “moscow”)", reply_markup=kb)
+        from .step4_location import handle as step4_handle
+        # Re‐invoke step4 handler to re‐send the map/text location keyboard
+        step4_handle(bot, m, w)
         return
 
     # 2) Must be “public” or “private”
@@ -39,6 +39,7 @@ def handle(bot, m, w):
     )
 
     # 4) Create the Event in the database
+    #    Build `location_txt` was already set in step 5; include latitude/longitude/address as well.
     with SessionLocal() as db:
         ev = Event(
             id=str(uuid.uuid4()),
@@ -46,11 +47,13 @@ def handle(bot, m, w):
             title=w["title"],
             description=w["description"],
             datetime_utc=w["datetime_utc"],
-            location_txt=w["location_txt"],
+            location_txt=w.get("location_txt", ""),
+            latitude=w.get("latitude", None),
+            longitude=w.get("longitude", None),
+            address=w.get("address", None),
             visibility=w["visibility"],
             tags=",".join(w.get("tags", []))
-        )
-        db.add(ev)
+        )        db.add(ev)
         db.commit()
 
     # 5) Build deep‐links (description & join)
