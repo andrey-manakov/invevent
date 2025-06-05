@@ -40,6 +40,14 @@ def handle(bot, m, w):
 
     # 4) Create the Event in the database
     #    Build `location_txt` was already set in step 5; include latitude/longitude/address as well.
+
+    if w.get("address"):
+        w["location_txt"] = w["address"]
+    elif w.get("latitude") is not None and w.get("longitude") is not None:
+        w["location_txt"] = f"{w['latitude']},{w['longitude']}"
+    else:
+        w["location_txt"] = ""
+
     with SessionLocal() as db:
         ev = Event(
             id=str(uuid.uuid4()),
