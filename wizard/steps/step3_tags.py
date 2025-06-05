@@ -26,7 +26,8 @@ def handle(bot, m, w):
         bot.send_message(user_id, "Wizard canceled.", reply_markup=types.ReplyKeyboardRemove())
         return
 
-    # 3) Otherwise, store the chosen tag
+    # 3) Otherwise, store the chosen tag. Only a single tag is supported
+    # so we save it under the ``tag`` key as plain text.
     w["tag"] = m.text
 
     # 4) Advance to step 4, ask for location via map or text
