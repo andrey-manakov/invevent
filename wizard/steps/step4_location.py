@@ -1,10 +1,13 @@
+# wizard/steps/step4_location.py
+
 from telebot import types
 
 def handle(bot, m, w):
     """
-    step 4: prompt user to share location via map (GPS).
-    If they tap “Send my current location,” Telegram returns a Location object.
-    Fallback: if they send text instead, treat it as a free-text address.
+    step 4: prompt user to share location via map (GPS) or type an address.
+    - If they tap “Send my current location,” Telegram returns a Location object.
+    - If they use the paperclip → Location (pick a pin on map), Telegram also returns a Location object.
+    - If they type something else, treat it as a free-text address.
     """
 
     user_id = m.from_user.id
@@ -26,14 +29,13 @@ def handle(bot, m, w):
         bot.send_message(user_id, "Wizard canceled.", reply_markup=types.ReplyKeyboardRemove())
         return
 
-    # 3) If we are still in the “ASK_LOCATION” state, send a location-request button
-    #    (This button sends the user's current GPS. To pick another point on the map,
-    #     instruct users to attach a location manually via the paperclip icon.)
-    if w["step"] == 4 and m.location is None:
+    # 3) If we are in step 4 but haven't received a Location update yet, re-send the location-request keyboard
+    if w.get("step") == 4 and m.content_type != 'location':
         rb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         rb.add(types.KeyboardButton("📍 Send my current location", request_location=True))
         rb.add(types.KeyboardButton("📌 Pick a location on map (use 📎 → Location)", request_location=False))
         rb.add("back", "cancel")
+
         bot.send_message(
             user_id,
             "📍 Tap “Send my current location” or click the 📎 (paperclip) → Location to pick any point on the map.\n"
@@ -42,15 +44,15 @@ def handle(bot, m, w):
         )
         return
 
-    # 4) Handle the Location object (user shared a location, either current or picked)
-    if m.location is not None and w["step"] == 4:
+    # 4) Handle the Location object (whether “current location” or a pin from paperclip → Location)
+    if m.content_type == 'location' and w.get("step") == 4:
         lat = m.location.latitude
         lon = m.location.longitude
 
         # Store latitude/longitude in wizard context
         w["latitude"] = lat
         w["longitude"] = lon
-        # Clear any previous free-text address
+        # Clear any previous free-text address (if there was one)
         w["address"] = None
 
         # Remove the custom keyboard and advance to visibility step
@@ -66,9 +68,9 @@ def handle(bot, m, w):
         bot.send_message(user_id, "Choose visibility:", reply_markup=vis_kb)
         return
 
-    # 5) Fallback: if user sends free-text instead of a Location object
-    if w["step"] == 4 and m.text is not None:
-        # Ignore the “Pick a location on map” button press (no payload)
+    # 5) Fallback: if user sends free-text (anything other than a Location update)
+    if w.get("step") == 4 and m.text is not None:
+        # If they pressed the “Pick a location on map” button (it sends that exact text, not a location), show instructions
         if m.text == "📌 Pick a location on map (use 📎 → Location)":
             bot.send_message(
                 user_id,
@@ -76,6 +78,7 @@ def handle(bot, m, w):
             )
             return
 
+        # Otherwise treat their message as a free-text address
         address_str = m.text.strip()
         w["address"] = address_str
         # Clear any previously stored coordinates
@@ -94,11 +97,12 @@ def handle(bot, m, w):
         bot.send_message(user_id, "Choose visibility:", reply_markup=vis_kb)
         return
 
-    # 6) Defensive catch: if none of the above matched, re-prompt in step 4
-    if w["step"] == 4:
+    # 6) Defensive catch-all: if none of the above matched, re-prompt in step 4
+    if w.get("step") == 4:
         bot.send_message(
             user_id,
-            "Please tap “📍 Send my current location” to share your GPS location, "
+            "Please tap “📍 Send my current location” to share your GPS location,\n"
+            "or click the 📎 (paperclip) → Location to pick any point on the map,\n"
             "or type an address. Use “back” or “cancel” as needed."
         )
         return
