@@ -60,7 +60,8 @@ def handle(bot, m, w):
             longitude=w.get("longitude", None),
             address=w.get("address", None),
             visibility=w["visibility"],
-            tags=",".join(w.get("tags", []))
+            # Only one tag is supported. It was saved under ``tag`` in step 3.
+            tags=w.get("tag", "")
         )        
         db.add(ev)
         db.commit()
