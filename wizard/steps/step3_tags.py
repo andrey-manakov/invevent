@@ -29,10 +29,11 @@ def handle(bot, m, w):
     # 3) Advance to step 4, ask for location via map or text
     w["step"] = 4
     loc_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
-    loc_kb.add(types.KeyboardButton("📍 Send my location on map", request_location=True))
+    loc_kb.add(types.KeyboardButton("📍 Send my current location", request_location=True))
+    loc_kb.add(types.KeyboardButton("📌 Pick a location on map (use 📎 → Location)", request_location=False))
     loc_kb.add("back", "cancel")
     bot.send_message(
         user_id,
-        "📍 Please tap the button to share your location on the map, or type a custom address.",
+        "📍 Tap “Send my current location” or click the 📎 (paperclip) → Location to pick any point on the map, or type an address.",
         reply_markup=loc_kb
     )
