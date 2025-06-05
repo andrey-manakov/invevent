@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum as PyEnum
 from sqlalchemy import String,Integer,DateTime,ForeignKey,Text,Enum as SAEnum
+from sqlalchemy import Float
 from sqlalchemy.orm import Mapped,mapped_column
 from .database import Base
 
@@ -28,10 +29,18 @@ class Event(Base):
     title:Mapped[str]=mapped_column(String(80))
     description:Mapped[str]=mapped_column(Text)
     datetime_utc:Mapped[datetime]=mapped_column(DateTime(timezone=True))
-    location_txt:Mapped[str]=mapped_column(String(120))
+    
+    # location_txt:Mapped[str]=mapped_column(String(120))
+    location_txt:Mapped[Optional[str]]=mapped_column(String(120), nullable=True)
+
     visibility:Mapped[EventVisibility]=mapped_column(SAEnum(EventVisibility))
     tags:Mapped[str]=mapped_column(String(120))
     state:Mapped[EventState]=mapped_column(SAEnum(EventState),default=EventState.Active)
+
+    # New fields to store geolocation or fallback address
+    latitude:Mapped[Optional[float]]  = mapped_column(Float, nullable=True)
+    longitude:Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    address:Mapped[Optional[str]]     = mapped_column(String(120), nullable=True)
 
 class Participation(Base):
     __tablename__="participations"
