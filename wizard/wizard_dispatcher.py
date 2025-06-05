@@ -24,7 +24,8 @@ def register_dispatcher(bot):
     Registers one message_handler that fires whenever wiz_get(uid) != None. 
     Then it does a “cancel” check, and finally dispatches to the proper step.
     """
-    @bot.message_handler(func=lambda m: wiz_get(m.from_user.id) is not None)
+    # @bot.message_handler(func=lambda m: wiz_get(m.from_user.id) is not None)
+    @bot.message_handler(func=lambda m: wiz_get(m.from_user.id) is not None, content_types=['text', 'location'])
     def _wizard_steps(m):
         user_id = m.from_user.id
         w = wiz_get(user_id)
