@@ -27,5 +27,5 @@ jobs:
     
     - name: Restart bot
       run: |
-        ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "pkill -f 'python.*run_bot.py' || true"
+        ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "pkill -f 'python.*run_bot.py' || true; cd '$(dirname '${{ secrets.VPS_TARGET_DIR }}')'; nohup python3 run_bot.py > run_bot.log 2>&1 &"
 
