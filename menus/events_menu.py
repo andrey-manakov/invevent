@@ -96,7 +96,34 @@ def register(bot):
 
     @bot.message_handler(func=lambda m: m.text == "📍 Show on map")
     def show_on_map(msg):
-        bot.reply_to(msg, "Map view is not implemented yet.")
+        uid = msg.from_user.id
+        state = get_state(uid)
+
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if state == "my_events":
+            with SessionLocal() as db:
+                owned = db.scalars(select(Event).where(Event.owner_id == uid,
+                                                    Event.state == EventState.Active,
+                                                    Event.datetime_utc >= today)).all()
+                joined = db.scalars(select(Event).join(Participation, Participation.event_id == Event.id)
+                                   .where(Participation.user_id == uid,
+                                          Event.state == EventState.Active,
+                                          Event.datetime_utc >= today)).all()
+            events = owned + [e for e in joined if e.owner_id != uid]
+        elif state == "friends_events":
+            events = _friends_events(uid)
+        elif state == "public_events":
+            with SessionLocal() as db:
+                events = db.scalars(select(Event)
+                                   .where(Event.visibility == EventVisibility.Public,
+                                          Event.state == EventState.Active)).all()
+        else:
+            bot.reply_to(msg, "Please select a list first.")
+            return
+
+        from ..map_view import show_events_on_map
+        show_events_on_map(bot, msg.chat.id, events)
 
     @bot.message_handler(func=lambda m: m.text == "⬅️ Back")
     def back(msg):
