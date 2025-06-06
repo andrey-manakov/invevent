@@ -37,3 +37,11 @@ python -m invevent.bot
 
 - **Event creation wizard** — step-by-step prompts to create a new event.
 - **Menus** to manage events, friends and settings.
+
+1. Install Python 3.11 or later.
+2. Install the dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+
