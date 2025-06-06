@@ -2,7 +2,7 @@
 import logging
 from telebot import TeleBot, types
 from .callbacks import register_callbacks
-from .config import BOT_TOKEN
+from .config import BOT_TOKEN, ADMIN_CHAT_ID
 from .database import Base, engine
 from .menus import register_menu
 # from .wizard_handlers import register_wizard
@@ -35,10 +35,11 @@ register_start(bot)
 register_dispatcher(bot)
 register_callbacks(bot)
 
-try:
-    bot.send_message("@andrey-manakov", "Bot started")
-except Exception as e:
-    log.warning("Failed to notify startup: %s", e)
+if ADMIN_CHAT_ID:
+    try:
+        bot.send_message(ADMIN_CHAT_ID, "Bot started")
+    except Exception as e:
+        log.warning("Failed to notify startup: %s", e)
 
 def main():
     log.info("Polling...")
