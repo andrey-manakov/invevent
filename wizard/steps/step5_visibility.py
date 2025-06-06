@@ -2,10 +2,13 @@
 
 import uuid
 from telebot import types
+# Added geocoding helper so that we store coordinates immediately when
+# the user entered a free-text address.
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 from invevent.models   import Event, EventVisibility
 from invevent.database import SessionLocal
 from invevent.wizard   import reset as wiz_reset
+from invevent.map_view import _geocode_address
 # from invevent.bot      import MAIN_KB
 
 def handle(bot, m, w):
@@ -47,6 +50,15 @@ def handle(bot, m, w):
         w["location_txt"] = f"{w['latitude']},{w['longitude']}"
     else:
         w["location_txt"] = ""
+
+    # If the user provided only an address, attempt geocoding once here so the
+    # coordinates are stored permanently. This avoids geocoding every time
+    # "Show on map" is pressed, and ensures that events created without sending
+    # a location can still appear on the map later.
+    if w.get("address") and (w.get("latitude") is None or w.get("longitude") is None):
+        coords = _geocode_address(w["address"])
+        if coords:
+            w["latitude"], w["longitude"] = coords
 
     with SessionLocal() as db:
         ev = Event(
