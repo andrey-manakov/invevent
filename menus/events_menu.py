@@ -34,7 +34,6 @@ def _friends_events(uid):
 def register(bot):
     @bot.message_handler(func=lambda m: m.text == "📅 Events")
     def events_main(msg):
-        print(msg)
         uid = msg.from_user.id
         set_state(uid, "events")
         events = _friends_events(uid)
