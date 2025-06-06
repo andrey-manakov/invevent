@@ -17,10 +17,9 @@ Base.metadata.create_all(engine)
 
 MAIN_KB=types.ReplyKeyboardMarkup(resize_keyboard=True,row_width=2)
 MAIN_KB.add(
-    "📅 My events",
-    "🧑‍🤝‍🧑 Friends' events",
-    "🌐 Public events",
+    "📅 Events",
     "➕ Create event",
+    "👥 Friends",
     "⚙️ Settings"
 )
 
@@ -35,6 +34,11 @@ register_menu(bot)
 register_start(bot)
 register_dispatcher(bot)
 register_callbacks(bot)
+
+try:
+    bot.send_message("@andrey-manakov", "Bot started")
+except Exception as e:
+    log.warning("Failed to notify startup: %s", e)
 
 def main():
     log.info("Polling...")
