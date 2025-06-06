@@ -4,6 +4,7 @@ from telebot import types
 from staticmap import StaticMap, CircleMarker
 from staticmap.staticmap import _lon_to_x, _lat_to_y
 from PIL import ImageDraw, ImageFont
+import folium
 import requests
 
 from .helpers import cb
@@ -70,3 +71,47 @@ def show_events_on_map(bot, chat_id: int, events):
         kb.add(types.InlineKeyboardButton(f"{idx}. {e.title}", callback_data=cb(e.id, "summary")))
 
     bot.send_photo(chat_id, buf, reply_markup=kb)
+
+
+def show_events_interactive_map(bot, chat_id: int, events):
+    """Send an interactive HTML map with markers for each event."""
+
+    evs = []
+    for e in events:
+        lat = e.latitude
+        lon = e.longitude
+        if lat is None or lon is None:
+            if e.address:
+                coords = _geocode_address(e.address)
+                if coords:
+                    lat, lon = coords
+        if lat is not None and lon is not None:
+            evs.append((e, lat, lon))
+
+    if not evs:
+        bot.send_message(chat_id, "No events with location to show.")
+        return
+
+    first_lat, first_lon = evs[0][1], evs[0][2]
+    m = folium.Map(location=[first_lat, first_lon], zoom_start=12)
+
+    for e, lat, lon in evs:
+        popup_text = (
+            f"<b>{e.title}</b><br>"
+            f"{e.datetime_utc:%Y-%m-%d %H:%M UTC}<br>"
+            f"{e.location_txt or ''}"
+        )
+        folium.Marker(
+            [lat, lon],
+            popup=folium.Popup(popup_text, max_width=300),
+        ).add_to(m)
+
+    html = m.get_root().render()
+    buf = BytesIO(html.encode("utf-8"))
+    buf.name = "events_map.html"
+
+    bot.send_document(
+        chat_id,
+        buf,
+        caption="Open this file to view the interactive map.",
+    )

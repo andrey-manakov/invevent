@@ -3,3 +3,4 @@ SQLAlchemy
 python-dotenv
 staticmap
 requests
+folium
