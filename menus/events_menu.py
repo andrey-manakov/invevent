@@ -7,10 +7,10 @@ from ..helpers import cb
 from .state import set_state, get_state
 
 EVENTS_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-EVENTS_KB.add("\ud83d\udccb My events", "\ud83e\udefc Friends events", "\ud83c\udf10 Public events", "\u2b05\ufe0f Back")
+EVENTS_KB.add("📋 My events", "👥 Friends events", "🌐 Public events", "⬅️ Back")
 
 LIST_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-LIST_KB.add("\ud83d\udccd Show on map", "\u2b05\ufe0f Back")
+LIST_KB.add("📍 Show on map", "⬅️ Back")
 
 
 def _list_events(user_id, events):
@@ -41,7 +41,7 @@ def register(bot):
         bot.send_message(msg.chat.id, text, reply_markup=ikb)
         bot.send_message(msg.chat.id, "Select:", reply_markup=EVENTS_KB)
 
-    @bot.message_handler(func=lambda m: m.text == "\ud83d\udccb My events")
+    @bot.message_handler(func=lambda m: m.text == "📋 My events")
     def my_events(msg):
         print("my events handling")
         uid = msg.from_user.id
@@ -57,7 +57,7 @@ def register(bot):
         bot.send_message(msg.chat.id, "<b>Joined:</b>\n" + text_j, parse_mode="HTML", reply_markup=kb_j)
         bot.send_message(msg.chat.id, "Options:", reply_markup=LIST_KB)
 
-    @bot.message_handler(func=lambda m: m.text == "\ud83e\udefc Friends events")
+    @bot.message_handler(func=lambda m: m.text == "👥 Friends events")
     def friends_events(msg):
         uid = msg.from_user.id
         set_state(uid, "friends_events")
@@ -66,7 +66,7 @@ def register(bot):
         bot.send_message(msg.chat.id, text, reply_markup=ikb)
         bot.send_message(msg.chat.id, "Options:", reply_markup=LIST_KB)
 
-    @bot.message_handler(func=lambda m: m.text == "\ud83c\udf10 Public events")
+    @bot.message_handler(func=lambda m: m.text == "🌐 Public events")
     def public_events(msg):
         uid = msg.from_user.id
         set_state(uid, "public_events")
@@ -76,11 +76,11 @@ def register(bot):
         bot.send_message(msg.chat.id, text, reply_markup=ikb)
         bot.send_message(msg.chat.id, "Options:", reply_markup=LIST_KB)
 
-    @bot.message_handler(func=lambda m: m.text == "\ud83d\udccd Show on map")
+    @bot.message_handler(func=lambda m: m.text == "📍 Show on map")
     def show_on_map(msg):
         bot.reply_to(msg, "Map view is not implemented yet.")
 
-    @bot.message_handler(func=lambda m: m.text == "\u2b05\ufe0f Back")
+    @bot.message_handler(func=lambda m: m.text == "⬅️ Back")
     def back(msg):
         uid = msg.from_user.id
         state = get_state(uid)
