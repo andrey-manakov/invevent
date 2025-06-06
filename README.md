@@ -1,60 +1,42 @@
-# 📑 Project Brief: Social Event Coordination Web App (Rev 2 – 30 May 2025)
+# InvEvent Telegram Bot
 
-Telegram bot for planning outings with friends.
-
-## 1 — Purpose & Business Value
-
-Build a lightweight web service that lets people **share upcoming-event plans**, **add friends**, and **discover & join friends’ plans**.
-**Why it matters:** 65 % of Gen Z coordinate outings via ad‑hoc chat threads (Statista 2024). Centralising this flow boosts engagement for venues and users alike.
-
----
-
-## Configuration
-
-Set the following environment variables before running the bot:
-
-- `BOT_TOKEN` — Telegram bot token (required)
-- `DB_URL` — SQLAlchemy database URL (optional, defaults to `sqlite:///db.sqlite3`)
-- `ADMIN_CHAT_ID` — chat ID to notify on startup (optional)
-
----
-
-## 2 — Development Roadmap
-
-## Setup
-
-### Environment variables
-
-Set the following variables before running the bot:
-
-- `BOT_TOKEN` — Telegram bot token.
-- `DB_URL` — database connection string (defaults to `sqlite:///db.sqlite3`).
-- `ADMIN_CHAT_ID` — chat ID of the admin user.
-
-### Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Run the bot
-
-```bash
-python -m invevent.bot
-```
+InvEvent is a small Telegram bot for planning outings with friends. It stores events in an SQL database and lets users share, join and view events directly in chat.
 
 ## Features
 
-- **Event creation wizard** — step-by-step prompts to create a new event.
-- **Menus** to manage events, friends and settings.
-- **Show events on a map** — view locations of upcoming events as pins.
+- **Event wizard** – guided steps to collect title, description, date/time, tag, location and visibility.
+- **Deep links** for viewing an event description or joining it.
+- **Event lists** – browse your events, friends' private events and all public events.
+- **Map display** – show upcoming events on a single static map (uses OpenStreetMap for geocoding addresses).
+- **Simple settings** – delete all events for testing.
+
+## Configuration
+
+Create a `.env` file or export these environment variables:
+
+```
+BOT_TOKEN=your_bot_token
+DB_URL=sqlite:///db.sqlite3  # optional
+ADMIN_CHAT_ID=<chat id>      # optional
+```
+
+`BOT_TOKEN` is required. `DB_URL` defaults to a local SQLite file.
+
+## Installation
 
 1. Install Python 3.11 or later.
 2. Install the dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-   The map feature relies on the `staticmap` package which is included in the
-   requirements file.
+   The `staticmap` package is included and used for map rendering.
 
+## Running
 
+Start the bot with:
+
+```bash
+python -m invevent.bot
+```
+
+The bot logs to `bot.log` and sends a startup message to `ADMIN_CHAT_ID` if provided.
