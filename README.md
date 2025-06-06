@@ -10,3 +10,13 @@ Build a lightweight web service that lets people **share upcoming-event plans**,
 ---
 
 ## 2 — Development Roadmap
+
+## Setup
+
+1. Install Python 3.11 or later.
+2. Install the dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+
