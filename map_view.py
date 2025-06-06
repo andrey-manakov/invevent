@@ -3,7 +3,6 @@ from telebot import types
 from staticmap import StaticMap, CircleMarker
 from staticmap.staticmap import _lon_to_x, _lat_to_y
 from PIL import ImageDraw, ImageFont
-
 from .helpers import cb
 
 
