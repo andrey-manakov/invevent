@@ -26,4 +26,4 @@ jobs:
 
     - name: Restart invevent service
       run: |
-        ssh ${{ secrets.VPS_ROOT }}@${{ secrets.VPS_HOST }} "systemctl restart invevent.service"
+        ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "systemctl restart invevent.service"
