@@ -10,5 +10,6 @@ for p in (pathlib.Path(__file__).resolve().parents[1]/".env",
 
 BOT_TOKEN=os.getenv("BOT_TOKEN")
 DB_URL=os.getenv("DB_URL","sqlite:///db.sqlite3")
+ADMIN_CHAT_ID=os.getenv("ADMIN_CHAT_ID")
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN missing")

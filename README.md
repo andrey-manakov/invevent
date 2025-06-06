@@ -9,4 +9,14 @@ Build a lightweight web service that lets people **share upcoming-event plans**,
 
 ---
 
+## Configuration
+
+Set the following environment variables before running the bot:
+
+- `BOT_TOKEN` — Telegram bot token (required)
+- `DB_URL` — SQLAlchemy database URL (optional, defaults to `sqlite:///db.sqlite3`)
+- `ADMIN_CHAT_ID` — chat ID to notify on startup (optional)
+
+---
+
 ## 2 — Development Roadmap
