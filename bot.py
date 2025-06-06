@@ -9,7 +9,12 @@ from .menus import register_menu
 from .wizard.wizard_start import register_start
 from .wizard.wizard_dispatcher import register_dispatcher
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    filename="bot.log",
+    filemode="a",
+)
 log=logging.getLogger("invevent")
 
 bot=TeleBot(BOT_TOKEN,parse_mode="HTML")
