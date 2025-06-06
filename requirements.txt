@@ -2,3 +2,4 @@ pyTelegramBotAPI
 SQLAlchemy
 python-dotenv
 staticmap
+requests
