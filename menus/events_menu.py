@@ -44,6 +44,7 @@ def register(bot):
 
     @bot.message_handler(func=lambda m: m.text == "\ud83d\udccb My events")
     def my_events(msg):
+        print("my events handling")
         uid = msg.from_user.id
         set_state(uid, "my_events")
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
