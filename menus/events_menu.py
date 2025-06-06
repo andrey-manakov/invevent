@@ -5,6 +5,9 @@ from ..database import SessionLocal
 from ..models import Event, Participation, EventState, EventVisibility, Friendship
 from ..helpers import cb
 from .state import set_state, get_state
+import logging
+
+log = logging.getLogger(__name__)
 
 EVENTS_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 EVENTS_KB.add("📋 My events", "👥 Friends events", "🌐 Public events", "⬅️ Back")
@@ -49,7 +52,7 @@ def register(bot):
 
     @bot.message_handler(func=lambda m: m.text == "📋 My events")
     def my_events(msg):
-        print("my events handling")
+        log.debug("my events handling")
         uid = msg.from_user.id
         set_state(uid, "my_events")
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
