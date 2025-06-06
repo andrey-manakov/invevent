@@ -47,11 +47,14 @@ python -m invevent.bot
 
 - **Event creation wizard** — step-by-step prompts to create a new event.
 - **Menus** to manage events, friends and settings.
+- **Show events on a map** — view locations of upcoming events as pins.
 
 1. Install Python 3.11 or later.
 2. Install the dependencies:
    ```bash
    pip install -r requirements.txt
    ```
+   The map feature relies on the `staticmap` package which is included in the
+   requirements file.
 
 
