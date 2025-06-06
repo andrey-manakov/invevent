@@ -26,3 +26,19 @@ def register_callbacks(bot):
             elif verb=="delete" and ev.owner_id==c.from_user.id:
                 ev.state=EventState.Deleted; db.commit()
                 bot.answer_callback_query(c.id,"Deleted")
+            elif verb=="summary":
+                part=db.get(Participation,{"event_id":eid,"user_id":c.from_user.id})
+                kb=types.InlineKeyboardMarkup(row_width=2)
+                kb.add(types.InlineKeyboardButton("Details",callback_data=cb(eid,"details")))
+                if c.from_user.id==ev.owner_id:
+                    kb.add(types.InlineKeyboardButton("Delete",callback_data=cb(eid,"delete")))
+                else:
+                    if part:
+                        kb.add(types.InlineKeyboardButton("Unjoin",callback_data=cb(eid,"unjoin")))
+                    else:
+                        kb.add(types.InlineKeyboardButton("Join",callback_data=cb(eid,"join")))
+                text=(f"<b>{ev.title}</b>\n"
+                      f"🗓️ {ev.datetime_utc:%Y-%m-%d %H:%M UTC}\n"
+                      f"📍{ev.location_txt}")
+                bot.answer_callback_query(c.id)
+                bot.send_message(c.message.chat.id,text,parse_mode="HTML",reply_markup=kb)
