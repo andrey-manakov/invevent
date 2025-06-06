@@ -14,14 +14,16 @@ LIST_KB.add("📍 Show on map", "⬅️ Back")
 
 
 def _list_events(user_id, events):
-    text_lines = []
+    """Return text/kb pair for event list with button-only style."""
+
     kb = types.InlineKeyboardMarkup()
     for e in events:
-        text_lines.append(f"\u2022 {e.title} \u2014 {e.datetime_utc:%d %b}")
-        kb.add(types.InlineKeyboardButton(e.title, callback_data=cb(e.id, "summary")))
-    if not text_lines:
-        text_lines.append("(none)")
-    return "\n".join(text_lines), kb
+        label = f"{e.title} — {e.datetime_utc:%d %b}"
+        kb.add(types.InlineKeyboardButton(label, callback_data=cb(e.id, "summary")))
+
+    if events:
+        return "", kb
+    return "(none)", None
 
 
 def _friends_events(uid):
@@ -38,7 +40,11 @@ def register(bot):
         set_state(uid, "events")
         events = _friends_events(uid)
         text, ikb = _list_events(uid, events)
-        bot.send_message(msg.chat.id, text, reply_markup=ikb)
+
+        header = "<b>Friends events:</b>"
+        if text:
+            header += "\n" + text
+        bot.send_message(msg.chat.id, header, parse_mode="HTML", reply_markup=ikb)
         bot.send_message(msg.chat.id, "Select:", reply_markup=EVENTS_KB)
 
     @bot.message_handler(func=lambda m: m.text == "📋 My events")
@@ -51,10 +57,16 @@ def register(bot):
             owned = db.scalars(select(Event).where(Event.owner_id == uid, Event.state == EventState.Active, Event.datetime_utc >= today)).all()
             joined = db.scalars(select(Event).join(Participation, Participation.event_id == Event.id).where(Participation.user_id == uid, Event.state == EventState.Active, Event.datetime_utc >= today)).all()
         text_o, kb_o = _list_events(uid, owned)
-        bot.send_message(msg.chat.id, "<b>Your events:</b>\n" + text_o, parse_mode="HTML", reply_markup=kb_o)
+        header_o = "<b>Your events:</b>"
+        if text_o:
+            header_o += "\n" + text_o
+        bot.send_message(msg.chat.id, header_o, parse_mode="HTML", reply_markup=kb_o)
         others = [e for e in joined if e.owner_id != uid]
         text_j, kb_j = _list_events(uid, others)
-        bot.send_message(msg.chat.id, "<b>Joined:</b>\n" + text_j, parse_mode="HTML", reply_markup=kb_j)
+        header_j = "<b>Joined:</b>"
+        if text_j:
+            header_j += "\n" + text_j
+        bot.send_message(msg.chat.id, header_j, parse_mode="HTML", reply_markup=kb_j)
         bot.send_message(msg.chat.id, "Options:", reply_markup=LIST_KB)
 
     @bot.message_handler(func=lambda m: m.text == "👥 Friends events")
@@ -63,7 +75,10 @@ def register(bot):
         set_state(uid, "friends_events")
         events = _friends_events(uid)
         text, ikb = _list_events(uid, events)
-        bot.send_message(msg.chat.id, text, reply_markup=ikb)
+        header = "<b>Friends events:</b>"
+        if text:
+            header += "\n" + text
+        bot.send_message(msg.chat.id, header, parse_mode="HTML", reply_markup=ikb)
         bot.send_message(msg.chat.id, "Options:", reply_markup=LIST_KB)
 
     @bot.message_handler(func=lambda m: m.text == "🌐 Public events")
@@ -73,7 +88,10 @@ def register(bot):
         with SessionLocal() as db:
             events = db.scalars(select(Event).where(Event.visibility == EventVisibility.Public, Event.state == EventState.Active)).all()
         text, ikb = _list_events(uid, events)
-        bot.send_message(msg.chat.id, text, reply_markup=ikb)
+        header = "<b>Public events:</b>"
+        if text:
+            header += "\n" + text
+        bot.send_message(msg.chat.id, header, parse_mode="HTML", reply_markup=ikb)
         bot.send_message(msg.chat.id, "Options:", reply_markup=LIST_KB)
 
     @bot.message_handler(func=lambda m: m.text == "📍 Show on map")
