@@ -17,7 +17,7 @@ def register(bot):
             from ..bot import MAIN_KB
             bot.send_message(
                 user_id,
-                f"<b>Hi {msg.from_user.first_name}!</b>\nPlan, share & join outings!!!",
+                f"<b>Hi {msg.from_user.first_name}!</b>\nPlan, share & join outings!",
                 parse_mode="HTML",
                 reply_markup=MAIN_KB
             )
