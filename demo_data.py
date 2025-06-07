@@ -6,21 +6,23 @@ from .database import SessionLocal
 from .models import User, Event, Friendship, EventVisibility
 from .wizard.wizard_utils import TOPICS, EVENT_OPTIONS
 
+# City → bounding box (lat_min, lat_max, lon_min, lon_max)
+# Moscow is listed multiple times to make it more likely in random choices.
 CITY_CHOICES = [
-    ("Moscow", 55.7558, 37.6176),
-    ("Moscow", 55.7558, 37.6176),
-    ("Moscow", 55.7558, 37.6176),
-    ("Moscow", 55.7558, 37.6176),
-    ("Moscow", 55.7558, 37.6176),
-    ("Saint Petersburg", 59.9311, 30.3609),
-    ("Novosibirsk", 55.0084, 82.9357),
-    ("Yekaterinburg", 56.8389, 60.6057),
-    ("Kazan", 55.7963, 49.1088),
-    ("Nizhny Novgorod", 56.2965, 43.9361),
-    ("Samara", 53.1959, 50.1008),
-    ("Omsk", 54.9885, 73.3242),
-    ("Chelyabinsk", 55.1644, 61.4368),
-    ("Rostov-on-Don", 47.2357, 39.7015),
+    ("Moscow", 55.55, 55.95, 37.35, 37.85),
+    ("Moscow", 55.55, 55.95, 37.35, 37.85),
+    ("Moscow", 55.55, 55.95, 37.35, 37.85),
+    ("Moscow", 55.55, 55.95, 37.35, 37.85),
+    ("Moscow", 55.55, 55.95, 37.35, 37.85),
+    ("Saint Petersburg", 59.8, 60.1, 30.1, 30.6),
+    ("Novosibirsk", 54.9, 55.2, 82.8, 83.2),
+    ("Yekaterinburg", 56.75, 56.95, 60.5, 60.7),
+    ("Kazan", 55.7, 55.9, 49.0, 49.3),
+    ("Nizhny Novgorod", 56.2, 56.4, 43.8, 44.1),
+    ("Samara", 53.1, 53.3, 50.0, 50.3),
+    ("Omsk", 54.9, 55.1, 73.2, 73.4),
+    ("Chelyabinsk", 55.1, 55.2, 61.35, 61.55),
+    ("Rostov-on-Don", 47.15, 47.3, 39.55, 39.85),
 ]
 
 
@@ -52,7 +54,9 @@ def generate_test_data(user_id: int) -> None:
                 title_opts = EVENT_OPTIONS.get(topic, ["other"])
                 title = random.choice(title_opts)
                 dt = datetime.now(timezone.utc) + timedelta(days=random.randint(0, 30))
-                city, lat, lon = random.choice(CITY_CHOICES)
+                city, lat_min, lat_max, lon_min, lon_max = random.choice(CITY_CHOICES)
+                lat = random.uniform(lat_min, lat_max)
+                lon = random.uniform(lon_min, lon_max)
                 vis = random.choice(list(EventVisibility))
                 ev = Event(
                     id=str(uuid.uuid4()),
