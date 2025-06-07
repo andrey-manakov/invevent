@@ -125,8 +125,8 @@ def register(bot):
             bot.reply_to(msg, "Please select a list first.")
             return
 
-        from ..map_view import show_events_interactive_map
-        show_events_interactive_map(bot, msg.chat.id, events)
+        from ..map_view import show_events_on_map
+        show_events_on_map(bot, msg.chat.id, events)
 
     @bot.message_handler(func=lambda m: m.text == "⬅️ Back")
     def back(msg):
