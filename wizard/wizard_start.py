@@ -2,19 +2,22 @@
 
 from telebot import types
 from .wizard import start as wiz_start
+from .wizard_utils import TOPICS
 
 def register_start(bot):
     """
     Registers the “➕ Create event” entry‐point. 
-    Puts user at step 0 (title) and sends the first keyboard.
+    Puts user at step 0 (topic selection) and sends the first keyboard.
     """
     @bot.message_handler(func=lambda m: m.text == "➕ Create event")
     def start_event(m):
         user_id = m.from_user.id
         wiz_start(user_id)
 
-        # Keyboard for step 0: “default” or “cancel”
-        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        kb.add("default", "cancel")
+        # Keyboard for step 0: list of topics + cancel
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        for t in TOPICS:
+            kb.add(t)
+        kb.add("cancel")
 
-        bot.reply_to(m, "Event title?", reply_markup=kb)
+        bot.reply_to(m, "Select a topic:", reply_markup=kb)

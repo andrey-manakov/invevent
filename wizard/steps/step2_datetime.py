@@ -2,7 +2,7 @@
 
 from telebot import types
 from datetime import datetime, timezone, timedelta
-from ..wizard_utils import TAGS
+from ..wizard_utils import EVENT_OPTIONS
 
 def handle(bot, m, w):
     """
@@ -10,12 +10,14 @@ def handle(bot, m, w):
     """
     user_id = m.from_user.id
 
-    # 1) Back → go to step 1
+    # 1) Back → return to step 1 (event choice)
     if m.text == "back":
         w["step"] = 1
-        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
-        kb.add("default", "back", "cancel")
-        bot.send_message(user_id, "Event description?", reply_markup=kb)
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        for o in EVENT_OPTIONS.get(w.get("topic"), []):
+            kb.add(o)
+        kb.add("back", "cancel")
+        bot.send_message(user_id, "Select event type:", reply_markup=kb)
         return
 
     # 2) “today” / “tomorrow” logic
@@ -33,10 +35,15 @@ def handle(bot, m, w):
         bot.send_message(user_id, "Please tap one of the buttons: “today” or “tomorrow”.")
         return
 
-    # 3) Advance to step 3, ask for tag
+    # 3) Advance to step 3, ask for location
     w["step"] = 3
-    tag_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    for t in TAGS:
-        tag_kb.add(t)
-    tag_kb.add("Other", "back", "cancel")
-    bot.send_message(user_id, "Select a tag (one only):", reply_markup=tag_kb)
+    loc_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+    loc_kb.add(types.KeyboardButton("📍 Send my current location", request_location=True))
+    loc_kb.add(types.KeyboardButton("📌 Pick a location on map (use 📎 → Location)", request_location=False))
+    loc_kb.add("back", "cancel")
+    bot.send_message(
+        user_id,
+        "📍 Tap “Send my current location” or click the 📎 (paperclip) → Location to pick any point on the map,\n"
+        "or type a custom address. Use “back” or “cancel” as needed.",
+        reply_markup=loc_kb,
+    )

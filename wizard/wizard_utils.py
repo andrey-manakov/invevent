@@ -3,8 +3,37 @@
 import uuid
 
 # ─────────────────────────────────────────────────────────────────────────────
-# A fixed list of “tags” used in step 3.  You can modify as needed.
-TAGS = ["🎉 Party", "🎮 Gaming", "🍽️ Food", "🎬 Cinema"]
+# Topic list for the first wizard step (alphabetical order).
+# These values are stored in the ``tags`` column of ``Event``.
+TOPICS = [
+    "business and work",
+    "culture and education",
+    "hangout and dine out",
+    "health and beauty",
+    "hobby and entertainment",
+    "nature",
+    "sport",
+    "other",
+]
+
+# Mapping topic → list of event titles shown in step 1.
+EVENT_OPTIONS = {
+    "sport": ["run", "bike", "gym", "workout", "other"],
+    "culture and education": [
+        "theatre",
+        "concert",
+        "museum",
+        "art",
+        "lecture",
+        "other",
+    ],
+    "hobby and entertainment": ["cinema", "master class", "other"],
+    "hangout and dine out": ["lunch", "dinner", "drinks", "other"],
+    "health and beauty": ["spa", "barber shop", "beauty salon", "other"],
+    "business and work": ["office", "business trip", "conference", "other"],
+    "nature": ["other"],
+    "other": ["other"],
+}
 # ─────────────────────────────────────────────────────────────────────────────
 
 def random_suffix():

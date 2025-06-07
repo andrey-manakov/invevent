@@ -1,11 +1,19 @@
 # wizard/wizard.py
 
 """
-Simple in‐memory wizard state for each user. 
-Tracks which step (0..5) the user is on. 
+Simple in-memory wizard state for each user.
+Tracks which step (0..6) the user is on.
 """
 
-STEPS = ["title", "description", "datetime", "tags", "location", "visibility", "confirm"]
+STEPS = [
+    "topic",
+    "event",
+    "datetime",
+    "location",
+    "visibility",
+    "picture",
+    "description",
+]
 
 # { user_id: {"step": int, …other keys…} }
 WIZ = {}
