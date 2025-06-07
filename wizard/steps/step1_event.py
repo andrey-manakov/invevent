@@ -11,8 +11,7 @@ def handle(bot, m, w):
     if m.text == "back":
         w["step"] = 0
         kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        for t in TOPICS:
-            kb.add(t)
+        kb.add(*TOPICS)
         kb.add("cancel")
         bot.send_message(user_id, "Select a topic:", reply_markup=kb)
         return
@@ -20,8 +19,7 @@ def handle(bot, m, w):
     options = EVENT_OPTIONS.get(w.get("topic"), [])
     if m.text not in options:
         kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        for o in options:
-            kb.add(o)
+        kb.add(*options)
         kb.add("back", "cancel")
         bot.send_message(user_id, "Please choose one of the options:", reply_markup=kb)
         return
