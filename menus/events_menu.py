@@ -13,7 +13,10 @@ EVENTS_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 EVENTS_KB.add("📋 My events", "👥 Friends events", "🌐 Public events", "⬅️ Back")
 
 LIST_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-LIST_KB.add("📍 Show on map", "⬅️ Back")
+LIST_KB.add("📍 Show on map", "📍 Nearby", "⬅️ Back")
+
+# store which list the user was viewing when requesting nearby events
+NEARBY_CTX = {}
 
 
 def _list_events(user_id, events):
@@ -128,11 +131,69 @@ def register(bot):
         from ..map_view import show_events_on_map
         show_events_on_map(bot, msg.chat.id, events)
 
+    @bot.message_handler(func=lambda m: m.text == "📍 Nearby")
+    def nearby_request(msg):
+        uid = msg.from_user.id
+        state = get_state(uid)
+        if state not in ("my_events", "friends_events", "public_events"):
+            bot.reply_to(msg, "Please select a list first.")
+            return
+
+        NEARBY_CTX[uid] = state
+        set_state(uid, "nearby_wait")
+
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        kb.add(types.KeyboardButton("📍 Send my current location", request_location=True))
+        kb.add("⬅️ Back")
+        bot.send_message(msg.chat.id, "Send your location to see nearby events:", reply_markup=kb)
+
+    @bot.message_handler(content_types=["location"])
+    def handle_nearby_location(msg):
+        uid = msg.from_user.id
+        if get_state(uid) != "nearby_wait":
+            return
+
+        prev = NEARBY_CTX.pop(uid, None)
+        set_state(uid, prev or "events")
+
+        user_lat = msg.location.latitude
+        user_lon = msg.location.longitude
+
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        if prev == "my_events":
+            with SessionLocal() as db:
+                owned = db.scalars(select(Event).where(Event.owner_id == uid,
+                                                    Event.state == EventState.Active,
+                                                    Event.datetime_utc >= today)).all()
+                joined = db.scalars(select(Event).join(Participation, Participation.event_id == Event.id)
+                                   .where(Participation.user_id == uid,
+                                          Event.state == EventState.Active,
+                                          Event.datetime_utc >= today)).all()
+            events = owned + [e for e in joined if e.owner_id != uid]
+        elif prev == "friends_events":
+            events = _friends_events(uid)
+        elif prev == "public_events":
+            with SessionLocal() as db:
+                events = db.scalars(select(Event)
+                                   .where(Event.visibility == EventVisibility.Public,
+                                          Event.state == EventState.Active)).all()
+        else:
+            bot.reply_to(msg, "Please select a list first.")
+            return
+
+        from ..map_view import show_events_on_map, filter_nearby_events
+        nearby = filter_nearby_events(events, user_lat, user_lon)
+        show_events_on_map(bot, msg.chat.id, nearby)
+
     @bot.message_handler(func=lambda m: m.text == "⬅️ Back")
     def back(msg):
         uid = msg.from_user.id
         state = get_state(uid)
-        if state in ("my_events", "friends_events", "public_events"):
+        if state == "nearby_wait":
+            prev = NEARBY_CTX.pop(uid, None)
+            set_state(uid, prev or "events")
+            bot.send_message(msg.chat.id, "Options:", reply_markup=LIST_KB)
+        elif state in ("my_events", "friends_events", "public_events"):
             set_state(uid, "events")
             bot.send_message(msg.chat.id, "Events:", reply_markup=EVENTS_KB)
         else:

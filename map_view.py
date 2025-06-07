@@ -8,6 +8,7 @@ import folium
 import requests
 
 from .helpers import cb
+from math import radians, sin, cos, sqrt, atan2
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +29,33 @@ def _geocode_address(address: str):
     except Exception as e:  # pragma: no cover - network failures
         log.warning("Geocoding failed for '%s': %s", address, e)
     return None
+
+
+def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Return distance in kilometers between two lat/lon points."""
+    r = 6371.0
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return r * c
+
+
+def filter_nearby_events(events, user_lat: float, user_lon: float, max_km: float = 30.0):
+    """Return events located within max_km of the given coordinates."""
+    result = []
+    for e in events:
+        lat = e.latitude
+        lon = e.longitude
+        if lat is None or lon is None:
+            if e.address:
+                coords = _geocode_address(e.address)
+                if coords:
+                    lat, lon = coords
+        if lat is not None and lon is not None:
+            if _haversine(user_lat, user_lon, lat, lon) <= max_km:
+                result.append(e)
+    return result
 
 
 def show_events_on_map(bot, chat_id: int, events):
