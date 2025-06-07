@@ -21,6 +21,7 @@ CITY_CHOICES = [
     ("Omsk", 54.9885, 73.3242),
     ("Chelyabinsk", 55.1644, 61.4368),
     ("Rostov-on-Don", 47.2357, 39.7015),
+]
 
 
 
