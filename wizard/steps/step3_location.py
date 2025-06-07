@@ -24,8 +24,8 @@ def handle(bot, m, w):
         log.debug("Not in step 3, returning without action.")
         return
 
-    # 2) If a Location object arrived, save coords and advance
-    if m.content_type == 'location' and m.location is not None:
+    # 2) If a Location/Venue object arrived, save coords and advance
+    if m.content_type in ("location", "venue") and getattr(m, "location", None) is not None:
         lat = m.location.latitude
         lon = m.location.longitude
         log.debug("Received location: latitude=%s, longitude=%s", lat, lon)
