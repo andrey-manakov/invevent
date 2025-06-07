@@ -8,7 +8,7 @@ InvEvent is a small Telegram bot for planning outings with friends. It stores ev
 - **Deep links** for viewing an event description or joining it.
 - **Event lists** – browse your events, friends' private events and all public events.
 - **Map display** – show upcoming events on a single static map (uses OpenStreetMap for geocoding addresses).
-- **Simple settings** – delete all events for testing.
+- **Simple settings** – delete all events or generate sample data for testing.
 
 ## Configuration
 
