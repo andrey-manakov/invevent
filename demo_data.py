@@ -6,8 +6,6 @@ from .database import SessionLocal
 from .models import User, Event, Friendship, EventVisibility
 from .wizard.wizard_utils import TOPICS, EVENT_OPTIONS
 
-# Cities list with coordinates. "Moscow" is repeated to bias the
-# distribution towards the capital as requested.
 CITY_CHOICES = [
     ("Moscow", 55.7558, 37.6176),
     ("Moscow", 55.7558, 37.6176),
@@ -23,7 +21,7 @@ CITY_CHOICES = [
     ("Omsk", 54.9885, 73.3242),
     ("Chelyabinsk", 55.1644, 61.4368),
     ("Rostov-on-Don", 47.2357, 39.7015),
-]
+
 
 
 def generate_test_data(user_id: int) -> None:
