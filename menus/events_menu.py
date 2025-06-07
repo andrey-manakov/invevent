@@ -44,14 +44,7 @@ def register(bot):
     def events_main(msg):
         uid = msg.from_user.id
         set_state(uid, "events")
-        events = _friends_events(uid)
-        text, ikb = _list_events(uid, events)
-
-        header = "<b>Friends events:</b>"
-        if text:
-            header += "\n" + text
-        bot.send_message(msg.chat.id, header, parse_mode="HTML", reply_markup=ikb)
-        bot.send_message(msg.chat.id, "Select:", reply_markup=EVENTS_KB)
+        bot.send_message(msg.chat.id, "Events:", reply_markup=EVENTS_KB)
 
     @bot.message_handler(func=lambda m: m.text == "📋 My events")
     def my_events(msg):
