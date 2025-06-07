@@ -10,8 +10,7 @@ def handle(bot, m, w):
 
     if m.text not in TOPICS:
         kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        for t in TOPICS:
-            kb.add(t)
+        kb.add(*TOPICS)
         kb.add("cancel")
         bot.send_message(user_id, "Select a topic:", reply_markup=kb)
         return
@@ -20,7 +19,6 @@ def handle(bot, m, w):
     w["step"] = 1
 
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    for opt in EVENT_OPTIONS.get(m.text, []):
-        kb.add(opt)
+    kb.add(*EVENT_OPTIONS.get(m.text, []))
     kb.add("back", "cancel")
     bot.send_message(user_id, "Select event type:", reply_markup=kb)

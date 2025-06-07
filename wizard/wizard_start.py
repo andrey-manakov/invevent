@@ -16,8 +16,7 @@ def register_start(bot):
 
         # Keyboard for step 0: list of topics + cancel
         kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        for t in TOPICS:
-            kb.add(t)
+        kb.add(*TOPICS)
         kb.add("cancel")
 
         bot.reply_to(m, "Select a topic:", reply_markup=kb)
