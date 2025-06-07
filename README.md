@@ -1,14 +1,23 @@
 # InvEvent Telegram Bot
 
-InvEvent is a small Telegram bot for planning outings with friends. It stores events in an SQL database and lets users share, join and view events directly in chat.
+InvEvent is a small Telegram bot for planning outings with friends. It stores
+events in an SQL database and lets users share, join and view them directly in
+chat.
 
 ## Features
 
-- **Event wizard** – guided steps to collect title, description, date/time, tag, location and visibility.
+- **Event wizard** – guided steps to collect topic, event type, date/time,
+  location, visibility, optional picture and description. Addresses are
+  geocoded via OpenStreetMap when needed.
 - **Deep links** for viewing an event description or joining it.
-- **Event lists** – browse your events, friends' private events and all public events.
-- **Map display** – show upcoming events on a single static map (uses OpenStreetMap for geocoding addresses).
-- **Simple settings** – delete all events or generate sample data for testing.
+- **Event lists** – browse your own and joined events, your friends’ private
+  events and all public events.
+- **Map display** – show upcoming events on a static map or as an interactive
+  HTML map; filter events that are near your current location.
+- **Friends** – follow/unfollow people, view followers and who you follow and
+  see friends’ events.
+- **Simple settings** – delete all data or generate random demo data for
+  testing.
 
 ## Configuration
 
