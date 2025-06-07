@@ -1,4 +1,4 @@
-# wizard/steps/step4_location.py
+# wizard/steps/step3_location.py
 
 from telebot import types
 import logging
@@ -9,19 +9,19 @@ PICK_ON_MAP_LABEL = "📌 Pick a location on map (use 📎 → Location)"
 
 def handle(bot, m, w):
     """
-    step 4: prompt user to share location via map (GPS) or type an address.
+    step 3: prompt user to share location via map (GPS) or type an address.
     Debug prints included to trace execution.
     """
 
     user_id = m.from_user.id
 
     # Debug: log incoming message details
-    log.debug("Entered step4_location.handle; w['step'] = %s", w.get('step'))
+    log.debug("Entered step3_location.handle; w['step'] = %s", w.get('step'))
     log.debug("m.content_type = %s, m.text = %s, m.location = %s", m.content_type, m.text, getattr(m, 'location', None))
 
-    # 1) If it's not step 4, do nothing
-    if w.get("step") != 4:
-        log.debug("Not in step 4, returning without action.")
+    # 1) If it's not step 3, do nothing
+    if w.get("step") != 3:
+        log.debug("Not in step 3, returning without action.")
         return
 
     # 2) If a Location object arrived, save coords and advance
@@ -40,28 +40,25 @@ def handle(bot, m, w):
             reply_markup=types.ReplyKeyboardRemove()
         )
 
-        w["step"] = 5
-        log.debug("Advancing to step 5 (visibility).")
+        w["step"] = 4
+        log.debug("Advancing to step 4 (visibility).")
         vis_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         vis_kb.add("public", "private", "back", "cancel")
         bot.send_message(user_id, "Choose visibility:", reply_markup=vis_kb)
         return
 
-    # 3) If user tapped “back,” go back to step 3 (tags)
+    # 3) If user tapped “back,” go back to step 2 (when)
     if m.text == "back":
-        log.debug("User pressed back in step 4.")
-        w["step"] = 3
+        log.debug("User pressed back in step 3.")
+        w["step"] = 2
         kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        from ..wizard_utils import TAGS
-        for t in TAGS:
-            kb.add(t)
-        kb.add("Other", "back", "cancel")
-        bot.send_message(user_id, "Select a tag (one only):", reply_markup=kb)
+        kb.add("today", "tomorrow", "back", "cancel")
+        bot.send_message(user_id, "Choose date & time:", reply_markup=kb)
         return
 
     # 4) If user tapped “cancel,” abort the wizard
     if m.text == "cancel":
-        log.debug("User pressed cancel in step 4.")
+        log.debug("User pressed cancel in step 3.")
         w["step"] = None
         bot.send_message(user_id, "Wizard canceled.", reply_markup=types.ReplyKeyboardRemove())
         return
@@ -89,15 +86,15 @@ def handle(bot, m, w):
             reply_markup=types.ReplyKeyboardRemove()
         )
 
-        w["step"] = 5
-        log.debug("Advancing to step 5 (visibility) after address fallback.")
+        w["step"] = 4
+        log.debug("Advancing to step 4 (visibility) after address fallback.")
         vis_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         vis_kb.add("public", "private", "back", "cancel")
         bot.send_message(user_id, "Choose visibility:", reply_markup=vis_kb)
         return
 
-    # 7) If none of the above (e.g. first entry to step 4 or sticker/image), re-send the “share/pick location” keyboard
-    log.debug("No valid input yet for step 4, re-sending location keyboard.")
+    # 7) If none of the above (e.g. first entry to step 3 or sticker/image), re-send the “share/pick location” keyboard
+    log.debug("No valid input yet for step 3, re-sending location keyboard.")
     rb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     rb.add(types.KeyboardButton("📍 Send my current location", request_location=True))
     rb.add(types.KeyboardButton(PICK_ON_MAP_LABEL, request_location=False))
