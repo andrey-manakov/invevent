@@ -6,12 +6,22 @@ from .database import SessionLocal
 from .models import User, Event, Friendship, EventVisibility
 from .wizard.wizard_utils import TOPICS, EVENT_OPTIONS
 
-# Cities list with bias towards Moscow
-CITIES = [
-    "Moscow", "Moscow", "Moscow", "Moscow", "Moscow",  # heavier weight
-    "Saint Petersburg", "Novosibirsk", "Yekaterinburg", "Kazan",
-    "Nizhny Novgorod", "Samara", "Omsk", "Chelyabinsk", "Rostov-on-Don"
-]
+CITY_CHOICES = [
+    ("Moscow", 55.7558, 37.6176),
+    ("Moscow", 55.7558, 37.6176),
+    ("Moscow", 55.7558, 37.6176),
+    ("Moscow", 55.7558, 37.6176),
+    ("Moscow", 55.7558, 37.6176),
+    ("Saint Petersburg", 59.9311, 30.3609),
+    ("Novosibirsk", 55.0084, 82.9357),
+    ("Yekaterinburg", 56.8389, 60.6057),
+    ("Kazan", 55.7963, 49.1088),
+    ("Nizhny Novgorod", 56.2965, 43.9361),
+    ("Samara", 53.1959, 50.1008),
+    ("Omsk", 54.9885, 73.3242),
+    ("Chelyabinsk", 55.1644, 61.4368),
+    ("Rostov-on-Don", 47.2357, 39.7015),
+
 
 
 def generate_test_data(user_id: int) -> None:
@@ -41,7 +51,7 @@ def generate_test_data(user_id: int) -> None:
                 title_opts = EVENT_OPTIONS.get(topic, ["other"])
                 title = random.choice(title_opts)
                 dt = datetime.now(timezone.utc) + timedelta(days=random.randint(0, 30))
-                city = random.choice(CITIES)
+                city, lat, lon = random.choice(CITY_CHOICES)
                 vis = random.choice(list(EventVisibility))
                 ev = Event(
                     id=str(uuid.uuid4()),
@@ -50,6 +60,9 @@ def generate_test_data(user_id: int) -> None:
                     description="test event",
                     datetime_utc=dt,
                     location_txt=city,
+                    latitude=lat,
+                    longitude=lon,
+                    address=city,
                     visibility=vis,
                     tags=topic,
                 )
