@@ -17,7 +17,7 @@ BACK_KB = types.ReplyKeyboardMarkup(resize_keyboard=True)
 BACK_KB.add("⬅️ Back")
 
 USER_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-USER_KB.add("🚫 Unfollow", "🗑 Unfriend", "📅 Events", "⬅️ Back", "🏠 Main menu")
+USER_KB.add("🚫 Unfollow", "🗑 Unfriend", "📅 Friend’s events", "⬅️ Back", "🏠 Main menu")
 
 # Context information about selected friend
 USER_CTX = {}
@@ -155,7 +155,7 @@ def register(bot):
             db.commit()
         bot.reply_to(msg, "Friendship removed.")
 
-    @bot.message_handler(func=lambda m: m.text == "📅 Events")
+    @bot.message_handler(func=lambda m: m.text == "📅 Friend’s events")
     def user_events(msg):
         if get_state(msg.from_user.id) != "friend_user":
             return
