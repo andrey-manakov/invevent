@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from telebot import types
+from telebot.handler_backends import ContinueHandling
 from sqlalchemy import select
 from ..database import SessionLocal
 from ..models import Event, Participation, EventState, EventVisibility, Friendship
@@ -144,7 +145,7 @@ def register(bot):
     def handle_nearby_location(msg):
         uid = msg.from_user.id
         if get_state(uid) != "nearby_wait":
-            return
+            return ContinueHandling()
 
         prev = NEARBY_CTX.pop(uid, None)
         set_state(uid, prev or "events")
