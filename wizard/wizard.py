@@ -2,7 +2,7 @@
 
 """
 Simple in-memory wizard state for each user.
-Tracks which step (0..6) the user is on.
+Tracks which step (0..5) the user is on.
 """
 
 STEPS = [
@@ -10,7 +10,6 @@ STEPS = [
     "event",
     "datetime",
     "location",
-    "visibility",
     "picture",
     "description",
 ]

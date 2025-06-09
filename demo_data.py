@@ -57,7 +57,7 @@ def generate_test_data(user_id: int) -> None:
                 city, lat_min, lat_max, lon_min, lon_max = random.choice(CITY_CHOICES)
                 lat = random.uniform(lat_min, lat_max)
                 lon = random.uniform(lon_min, lon_max)
-                vis = random.choice(list(EventVisibility))
+                vis = EventVisibility.Public
                 ev = Event(
                     id=str(uuid.uuid4()),
                     owner_id=fid,

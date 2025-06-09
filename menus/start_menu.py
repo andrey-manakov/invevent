@@ -2,7 +2,7 @@ from telebot import types
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 from sqlalchemy import select
 from ..database import SessionLocal
-from ..models import Event, Participation, EventState, EventVisibility, Friendship
+from ..models import Event, Participation, EventState, Friendship
 from ..helpers import cb
 from .state import set_state
 
@@ -54,8 +54,7 @@ def register(bot):
                     f"<b>{ev.title}</b>\n"
                     f"{ev.description}\n\n"
                     f"🗓️ {ev.datetime_utc:%Y-%m-%d %H:%M UTC}\n"
-                    f"📍 {ev.location_txt}\n"
-                    f"🔒 {'Private' if ev.visibility == EventVisibility.Private else 'Public'}"
+                    f"📍 {ev.location_txt}"
                 )
                 bot.send_message(user_id, text, parse_mode="HTML", reply_markup=inline_kb)
             return
@@ -81,7 +80,6 @@ def register(bot):
                     f"{ev.description}\n\n"
                     f"🗓️ {ev.datetime_utc:%Y-%m-%d %H:%M UTC}\n"
                     f"📍 {ev.location_txt}\n"
-                    f"🔒 {'Private' if ev.visibility == EventVisibility.Private else 'Public'}\n"
                     f"✅ You have joined this event."
                 )
                 bot.send_message(user_id, text, parse_mode="HTML", reply_markup=inline_kb)

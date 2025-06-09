@@ -41,10 +41,10 @@ def handle(bot, m, w):
         )
 
         w["step"] = 4
-        log.debug("Advancing to step 4 (visibility).")
-        vis_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        vis_kb.add("public", "private", "back", "cancel")
-        bot.send_message(user_id, "Choose visibility:", reply_markup=vis_kb)
+        log.debug("Advancing to step 4 (picture).")
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
+        kb.add("skip", "back", "cancel")
+        bot.send_message(user_id, "Send a picture for the event or tap skip:", reply_markup=kb)
         return
 
     # 3) If user tapped “back,” go back to step 2 (when)
@@ -87,10 +87,10 @@ def handle(bot, m, w):
         )
 
         w["step"] = 4
-        log.debug("Advancing to step 4 (visibility) after address fallback.")
-        vis_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        vis_kb.add("public", "private", "back", "cancel")
-        bot.send_message(user_id, "Choose visibility:", reply_markup=vis_kb)
+        log.debug("Advancing to step 4 (picture) after address fallback.")
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
+        kb.add("skip", "back", "cancel")
+        bot.send_message(user_id, "Send a picture for the event or tap skip:", reply_markup=kb)
         return
 
     # 7) If none of the above (e.g. first entry to step 3 or sticker/image), re-send the “share/pick location” keyboard
