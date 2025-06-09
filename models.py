@@ -5,6 +5,7 @@ from enum import Enum as PyEnum
 from sqlalchemy import String,Integer,DateTime,ForeignKey,Text,Enum as SAEnum
 from sqlalchemy import Float
 from sqlalchemy.orm import Mapped,mapped_column
+from sqlalchemy import event
 from .database import Base
 
 class User(Base):
@@ -53,3 +54,19 @@ class Friendship(Base):
     follower_id:Mapped[int]=mapped_column(Integer,ForeignKey("users.id"),primary_key=True)
     followee_id:Mapped[int]=mapped_column(Integer,ForeignKey("users.id"),primary_key=True)
     created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=lambda: datetime.utcnow())
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+# Older databases might contain naive timestamps for ``Event.datetime_utc``.
+# When an ``Event`` object is loaded, ensure this field is timezone-aware to
+# avoid ``TypeError`` during comparisons.
+
+@event.listens_for(Event, "load")
+def _event_fix_naive_dt(target, _context) -> None:
+    dt = target.datetime_utc
+    if dt is not None and dt.tzinfo is None:
+        target.datetime_utc = dt.replace(tzinfo=timezone.utc)
+
