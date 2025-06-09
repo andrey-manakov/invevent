@@ -21,6 +21,10 @@ LOC_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 LOC_KB.add(types.KeyboardButton("📍 Send my current location", request_location=True))
 LOC_KB.add("⬅️ Back")
 
+LIST_KB = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+LIST_KB.add("📍 Show on map", "📍 Nearby")
+LIST_KB.add("⬅️ Back")
+
 # store last known location per user
 LAST_LOCATION = {}
 

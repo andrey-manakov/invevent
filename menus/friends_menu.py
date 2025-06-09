@@ -92,7 +92,7 @@ def register(bot):
                     Event.datetime_utc >= today,
                 )
             ).all()
-        text, ikb = _list_events(uid, events)
+        text, ikb = _list_events(events)
         header = f"<b>{name}'s events:</b>"
         if text:
             header += "\n" + text
