@@ -4,18 +4,18 @@ from telebot import types
 
 
 def handle(bot, m, w):
-    """Step 5: optional picture."""
+    """Step 4: optional picture."""
     user_id = m.from_user.id
 
     if m.text == "back":
-        w["step"] = 4
-        from .step4_visibility import handle as step4_handle
-        step4_handle(bot, m, w)
+        w["step"] = 3
+        from .step3_location import handle as step3_handle
+        step3_handle(bot, m, w)
         return
 
     if m.text == "skip":
         w["photo_file_id"] = None
-        w["step"] = 6
+        w["step"] = 5
         kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
         kb.add("skip", "back", "cancel")
         bot.send_message(user_id, "Add a description or tap skip:", reply_markup=kb)
@@ -23,7 +23,7 @@ def handle(bot, m, w):
 
     if m.content_type == "photo" and m.photo:
         w["photo_file_id"] = m.photo[-1].file_id
-        w["step"] = 6
+        w["step"] = 5
         kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
         kb.add("skip", "back", "cancel")
         bot.send_message(user_id, "Add a description or tap skip:", reply_markup=kb)

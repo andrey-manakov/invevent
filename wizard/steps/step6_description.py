@@ -14,7 +14,7 @@ def handle(bot, m, w):
     user_id = m.from_user.id
 
     if m.text == "back":
-        w["step"] = 5
+        w["step"] = 4
         from .step5_picture import handle as step5_handle
         step5_handle(bot, m, w)
         return
@@ -54,7 +54,7 @@ def handle(bot, m, w):
             latitude=w.get("latitude"),
             longitude=w.get("longitude"),
             address=w.get("address"),
-            visibility=w["visibility"],
+            visibility=EventVisibility.Public,
             tags=w.get("topic", ""),
         )
         db.add(ev)
@@ -79,8 +79,7 @@ def handle(bot, m, w):
     summary = (
         f"<b>{w['title']}</b>\n"
         f"🗓️ {w['datetime_utc']:%Y-%m-%d %H:%M UTC}\n"
-        f"📍 {location_display}\n"
-        f"🔒 {'Private' if w['visibility'] == EventVisibility.Private else 'Public'}"
+        f"📍 {location_display}"
     )
 
     if w.get("photo_file_id"):

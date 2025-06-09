@@ -20,18 +20,22 @@ def register_callbacks(bot):
                 db.add(Participation(event_id=eid,user_id=c.from_user.id)); db.commit()
                 bot.answer_callback_query(c.id,"Joined!")
             elif verb=="unjoin":
-                part=db.get(Participation,{"event_id":eid,"user_id":c.from_user.id})
-                if part: db.delete(part); db.commit()
-                bot.answer_callback_query(c.id,"Unjoined!")
-            elif verb=="delete" and ev.owner_id==c.from_user.id:
-                ev.state=EventState.Deleted; db.commit()
-                bot.answer_callback_query(c.id,"Deleted")
+                if ev.owner_id==c.from_user.id:
+                    ev.state=EventState.Deleted
+                    db.commit()
+                    bot.answer_callback_query(c.id,"Deleted")
+                else:
+                    part=db.get(Participation,{"event_id":eid,"user_id":c.from_user.id})
+                    if part:
+                        db.delete(part)
+                        db.commit()
+                    bot.answer_callback_query(c.id,"Unjoined!")
             elif verb=="summary":
                 part=db.get(Participation,{"event_id":eid,"user_id":c.from_user.id})
                 kb=types.InlineKeyboardMarkup(row_width=2)
                 kb.add(types.InlineKeyboardButton("Details",callback_data=cb(eid,"details")))
                 if c.from_user.id==ev.owner_id:
-                    kb.add(types.InlineKeyboardButton("Delete",callback_data=cb(eid,"delete")))
+                    kb.add(types.InlineKeyboardButton("Unjoin",callback_data=cb(eid,"unjoin")))
                 else:
                     if part:
                         kb.add(types.InlineKeyboardButton("Unjoin",callback_data=cb(eid,"unjoin")))

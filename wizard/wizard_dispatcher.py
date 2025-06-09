@@ -6,9 +6,8 @@ from .steps.step0_topic import handle as handle_step0
 from .steps.step1_event import handle as handle_step1
 from .steps.step2_datetime import handle as handle_step2
 from .steps.step3_location import handle as handle_step3
-from .steps.step4_visibility import handle as handle_step4
-from .steps.step5_picture import handle as handle_step5
-from .steps.step6_description import handle as handle_step6
+from .steps.step5_picture import handle as handle_step4
+from .steps.step6_description import handle as handle_step5
 
 # Map numeric step → handler(bot, message, wizard_state)
 step_handlers = {
@@ -18,7 +17,6 @@ step_handlers = {
     3: handle_step3,
     4: handle_step4,
     5: handle_step5,
-    6: handle_step6,
 }
 
 def register_dispatcher(bot):
